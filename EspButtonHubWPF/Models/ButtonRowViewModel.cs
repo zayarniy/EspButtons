@@ -15,6 +15,13 @@ namespace EspButtonDiag.Wpf.Models
         public string LastSeq { get; private set; }
         public long LastUptimeMs { get; private set; }
 
+        // ==== НОВОЕ: heartbeat ====
+        public uint HbReceived { get; private set; }
+        public uint HbExpected { get; private set; }
+        public double DeliveryPercent { get; private set; }
+        public string DeliveryText { get; private set; }
+        public bool Rebooting { get; private set; }
+
         public string SecondsSinceLastSeen =>
             (DateTime.UtcNow - _lastSeen).TotalSeconds.ToString("F1");
 
@@ -27,8 +34,9 @@ namespace EspButtonDiag.Wpf.Models
             _firstSeen = DateTime.UtcNow;
             _lastSeen = DateTime.UtcNow;
             Alive = true;
-            LastIp = "";
-            LastSeq = "";
+            LastIp = ""; LastSeq = "";
+            DeliveryPercent = 100.0;
+            DeliveryText = "100%";
         }
 
         public void Update(ButtonInfo info)
@@ -41,6 +49,12 @@ namespace EspButtonDiag.Wpf.Models
             LastSeq = info.LastSeq ?? "";
             LastUptimeMs = info.LastUptimeMs;
 
+            HbReceived = info.ReceivedHbCount;
+            HbExpected = info.ExpectedHbCount;
+            DeliveryPercent = info.DeliveryPercent;
+            DeliveryText = $"{info.DeliveryPercent:F1}%  ({HbReceived}/{HbExpected})";
+            Rebooting = info.Rebooting;
+
             OnPropertyChanged(nameof(FirstSeenLocal));
             OnPropertyChanged(nameof(LastSeenLocal));
             OnPropertyChanged(nameof(LastIp));
@@ -49,9 +63,13 @@ namespace EspButtonDiag.Wpf.Models
             OnPropertyChanged(nameof(LastSeq));
             OnPropertyChanged(nameof(LastUptimeMs));
             OnPropertyChanged(nameof(SecondsSinceLastSeen));
+            OnPropertyChanged(nameof(HbReceived));
+            OnPropertyChanged(nameof(HbExpected));
+            OnPropertyChanged(nameof(DeliveryPercent));
+            OnPropertyChanged(nameof(DeliveryText));
+            OnPropertyChanged(nameof(Rebooting));
         }
 
-        // Для таймера, обновляющего "сколько секунд назад"
         public void RefreshTime() => OnPropertyChanged(nameof(SecondsSinceLastSeen));
 
         public event PropertyChangedEventHandler PropertyChanged;
