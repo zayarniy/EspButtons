@@ -19,7 +19,7 @@ namespace GuessMelody.Core.Models
             set { _playDurationSec = value; OnPropertyChanged(); }
         }
 
-        private StartAtMode _startAtMode = StartAtMode.FromRandomPlace;
+        public StartAtMode _startAtMode = StartAtMode.FromRandomPlace;
         public StartAtMode StartAtMode
         {
             get => _startAtMode;

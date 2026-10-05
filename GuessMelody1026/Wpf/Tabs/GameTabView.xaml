@@ -50,13 +50,14 @@
                                     Orientation="Horizontal" Margin="0,8,0,0">
                             <ComboBox SelectedValue="{Binding StartAtMode}"
                                       SelectedValuePath="Tag" Width="220">
+                                
                                 <ComboBoxItem Content="С начала"
                                               Tag="{x:Static models:StartAtMode.FromBeginning}"/>
                                 <ComboBoxItem Content="Со случайного места"
                                               Tag="{x:Static models:StartAtMode.FromRandomPlace}"/>
                                 <ComboBoxItem Content="С определённой секунды"
                                               Tag="{x:Static models:StartAtMode.FromSpecificTime}"/>
-                            </ComboBox>
+                                                            </ComboBox>
                             <TextBlock Style="{StaticResource Label}" Text="сек:"
                                        Margin="14,0,4,0"/>
                             <TextBox Style="{StaticResource NumBox}"

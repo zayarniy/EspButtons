@@ -23,6 +23,7 @@
         </StatusBar>
 
         <!-- ===== Вкладки ===== -->
+
         <TabControl x:Name="MainTabs" Margin="4"
                     SelectionChanged="MainTabs_SelectionChanged">
 
@@ -33,7 +34,7 @@
             <TabItem Header="🎮 Кнопки">
                 <tabs:ButtonsTabView x:Name="ButtonsTab"/>
             </TabItem>
-
+<!--
             <TabItem Header="⚙ Настройки">
                 <tabs:SettingsTabView x:Name="SettingsTab"/>
             </TabItem>
@@ -41,7 +42,7 @@
             <TabItem Header="📁 Папки">
                 <tabs:FoldersTabView x:Name="FoldersTab"/>
             </TabItem>
-
+-->
         </TabControl>
     </DockPanel>
 </Window>
