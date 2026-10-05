@@ -1,12 +1,19 @@
+using System;
 using System.Collections.Generic;
 
 namespace GuessMelody.Core.Models
 {
     public class CategoryConfig
     {
-        public string Name { get; set; }  // ќтображаемое им€ (Ђ–окї)
-        public string RelativePath { get; set; }  // "rock", путь относительно RootPath
+        public string Name { get; set; }
+        public string RelativePath { get; set; }
         public List<string> Tracks { get; set; } = new List<string>();
+
+        // ѕолный путь к папке категории на диске Ч вычисл€етс€ менеджером.
+        [Newtonsoft.Json.JsonIgnore]
+        public string FullPath { get; set; }
+
+        public int TrackCount => Tracks?.Count ?? 0;
     }
 
     public class FolderConfig
@@ -16,8 +23,11 @@ namespace GuessMelody.Core.Models
         public double DefaultPreviewStartSec { get; set; } = 0.0;
         public List<CategoryConfig> Categories { get; set; } = new List<CategoryConfig>();
 
-        //  люч Ч "<relativePath>/<fileName>", значение Ч с какой секунды превью
+        //  люч Ч "<relativePath>/<fileName>"
         public Dictionary<string, double> PreviewStartSec { get; set; }
-            = new Dictionary<string, double>();
+            = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+        public string Key(CategoryConfig cat, string track) =>
+            $"{cat.RelativePath?.Replace('\\', '/')}/{track}";
     }
 }
