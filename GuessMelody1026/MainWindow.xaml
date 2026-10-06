@@ -26,7 +26,9 @@
 
         <TabControl x:Name="MainTabs" Margin="4"
                     SelectionChanged="MainTabs_SelectionChanged">
-
+            <TabItem Header="🚀 Запуск">
+                <tabs:LaunchTabView x:Name="LaunchTab"/>
+            </TabItem>
             <TabItem Header="🎵 Игра">
                 <tabs:GameTabView x:Name="GameTab"/>
             </TabItem>
@@ -34,7 +36,7 @@
             <TabItem Header="🎮 Кнопки">
                 <tabs:ButtonsTabView x:Name="ButtonsTab"/>
             </TabItem>
-<!--
+
             <TabItem Header="⚙ Настройки">
                 <tabs:SettingsTabView x:Name="SettingsTab"/>
             </TabItem>
@@ -42,7 +44,9 @@
             <TabItem Header="📁 Папки">
                 <tabs:FoldersTabView x:Name="FoldersTab"/>
             </TabItem>
--->
+            <TabItem Header="📋 Логи">
+                <tabs:LogsTabView x:Name="LogsTab"/>
+            </TabItem>
         </TabControl>
     </DockPanel>
 </Window>

@@ -18,7 +18,7 @@ namespace GuessMelody.Core.Game
         private readonly FolderConfig _folders;
 
         // --- Таймеры ---
-        private readonly Timer _tickTimer = new Timer(100);   // общий тик для UI и отсчётов
+        private readonly Timer _tickTimer = new Timer(100);
         private DateTime _playDeadline;
         private DateTime _answerDeadline;
         private int _countdownRemaining;
@@ -41,12 +41,20 @@ namespace GuessMelody.Core.Game
         private readonly List<RoundRecord> _history = new List<RoundRecord>();
         private Random _rng = new Random();
 
-        // --- События (для UI и логов) ---
+        // --- Для RoundRecord ---
+        private DateTime _roundStartedUtc;
+        private DateTime? _pauseMoment;
+        private double _answerSecondsElapsed;
+
+        // --- Внешние MAC-и (для проверки «все ответили неверно») ---
+        private List<string> _knownMacs;
+
+        // --- События ---
         public event EventHandler<RoundState> StateChanged;
-        public event EventHandler<string> Message;      // просто лог
+        public event EventHandler<string> Message;
         public event EventHandler<PressEvent> PressAccepted;
         public event EventHandler<RoundRecord> RoundFinished;
-        public event EventHandler<int> CountdownTick;  // сколько осталось (3,2,1)
+        public event EventHandler<int> CountdownTick;
 
         public RoundEngine(IAudioEngine audio, GameSettings settings, FolderConfig folders)
         {
@@ -62,7 +70,6 @@ namespace GuessMelody.Core.Game
         // УПРАВЛЕНИЕ РАУНДОМ
         // =============================================================
 
-        /// <summary>Запустить новый раунд для категории.</summary>
         public void StartRound(CategoryConfig category)
         {
             if (category == null) { EndRound(EndReason.Manual); return; }
@@ -71,6 +78,10 @@ namespace GuessMelody.Core.Game
             Category = category;
             CurrentWinner = null;
             CurrentScore = 0;
+            _answerSecondsElapsed = 0;
+            _pauseMoment = null;
+            _roundStartedUtc = DateTime.UtcNow;
+
             _arbiter.Reset();
 
             var track = PickNextTrack(category);
@@ -128,8 +139,6 @@ namespace GuessMelody.Core.Game
             CurrentWinner = null;
 
             // Если все известные MAC уже ответили «Нет» — закрываем раунд.
-            var knownMacs = _folders?.Categories != null ? Array.Empty<string>() : Array.Empty<string>();
-            // Список известных MAC игроков передаём снаружи; см. SetKnownMacs ниже.
             if (_knownMacs != null && _arbiter.EveryoneRejected(_knownMacs))
             {
                 Message?.Invoke(this, "Все ответили неверно — раунд закрыт.");
@@ -145,7 +154,7 @@ namespace GuessMelody.Core.Game
             _tickTimer.Start();
         }
 
-        /// <summary>Ведущий принудительно закрывает раунд (никто/или вручную).</summary>
+        /// <summary>Ведущий принудительно закрывает раунд (никто / вручную).</summary>
         public void HostSaysNoOne()
         {
             if (State == RoundState.Idle) return;
@@ -154,7 +163,7 @@ namespace GuessMelody.Core.Game
         }
 
         // =============================================================
-        // СОБЫТИЯ ОТ ESP (вызываются снаружи)
+        // СОБЫТИЯ ОТ ESP
         // =============================================================
         public void OnPress(PressEvent e)
         {
@@ -167,14 +176,16 @@ namespace GuessMelody.Core.Game
                 return;
             }
 
-            // Первое принятое нажатие — пауза и переход к ответу.
             var first = _arbiter.GetFirst();
             if (first != null && CurrentWinner == null)
             {
                 CurrentWinner = first;
                 _audio.Pause();
+                _pauseMoment = DateTime.UtcNow;
+                _answerSecondsElapsed = 0;
 
-                _answerDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(_settings.AnswerSeconds);
+                _answerDeadline = DateTime.UtcNow +
+                    TimeSpan.FromSeconds(_settings.AnswerSeconds);
                 SetState(RoundState.WaitingAnswer);
                 PressAccepted?.Invoke(this, first);
                 Message?.Invoke(this, $"Нажал первым: {first.Mac}");
@@ -184,17 +195,13 @@ namespace GuessMelody.Core.Game
         // =============================================================
         // ВНУТРЕННЕЕ
         // =============================================================
-
-        /// <summary>Список известных MAC (для проверки «все ответили неверно»).</summary>
         public void SetKnownMacs(IEnumerable<string> macs)
         {
             _knownMacs = macs?.Where(m => !string.IsNullOrEmpty(m)).ToList();
         }
-        private List<string> _knownMacs;
 
         private void OnTick(object sender, ElapsedEventArgs e)
         {
-            // Два независимых состояния — отсчёт перед треком и таймер на ответ
             if (State == RoundState.Countdown)
             {
                 _countdownRemaining--;
@@ -224,6 +231,9 @@ namespace GuessMelody.Core.Game
 
             if (State == RoundState.WaitingAnswer)
             {
+                if (_pauseMoment.HasValue)
+                    _answerSecondsElapsed = (DateTime.UtcNow - _pauseMoment.Value).TotalSeconds;
+
                 if (DateTime.UtcNow >= _answerDeadline)
                 {
                     Message?.Invoke(this, "Время ответа истекло — автоматически +0.");
@@ -249,7 +259,8 @@ namespace GuessMelody.Core.Game
                 Message?.Invoke(this, $"Ошибка воспроизведения {TrackFile}: {ex.Message}");
             }
 
-            _playDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(_settings.PlayDurationSec);
+            _playDeadline = DateTime.UtcNow +
+                TimeSpan.FromSeconds(_settings.PlayDurationSec);
             SetState(RoundState.TrackPlaying);
             _tickTimer.Start();
         }
@@ -266,11 +277,10 @@ namespace GuessMelody.Core.Game
 
                 case StartAtMode.FromRandomPlace:
                 default:
-                    // Пытаемся угадать длительность — если не знаем, ограничимся 60 с.
                     var dur = _audio.Duration > TimeSpan.Zero
                         ? _audio.Duration
                         : TimeSpan.FromSeconds(60);
-                    var maxStart = dur.TotalSeconds * 0.6;   // не в последние 40% трека
+                    var maxStart = dur.TotalSeconds * 0.6;
                     if (maxStart < 1) return TimeSpan.Zero;
                     return TimeSpan.FromSeconds(_rng.NextDouble() * maxStart);
             }
@@ -294,7 +304,6 @@ namespace GuessMelody.Core.Game
         private static string Key(CategoryConfig cat, string track) =>
             $"{cat.RelativePath}|{track}";
 
-        /// <summary>Сколько треков осталось в категории.</summary>
         public int TracksLeft(CategoryConfig cat)
         {
             if (cat == null) return 0;
@@ -321,17 +330,23 @@ namespace GuessMelody.Core.Game
         {
             _tickTimer.Stop();
 
+            // Если пауза была — досчитаем реальное время ответа
+            if (_pauseMoment.HasValue)
+                _answerSecondsElapsed =
+                    (DateTime.UtcNow - _pauseMoment.Value).TotalSeconds;
+
             var record = new RoundRecord
             {
                 RoundNumber = RoundNumber,
                 Category = Category?.Name,
                 TrackFile = TrackFile,
                 WinnerMac = CurrentWinner?.Mac,
-                WinnerName = null,                 // подставит вызывающая сторона
+                WinnerName = null,               // заполнит GameController
+                Score = CurrentScore,
                 Reason = reason,
-                StartedUtc = DateTime.UtcNow,      // можно заменить на момент старта
+                StartedUtc = _roundStartedUtc,
                 FinishedUtc = DateTime.UtcNow,
-                AnswerTimeSec = 0
+                AnswerTimeSec = _answerSecondsElapsed
             };
 
             _history.Add(record);
@@ -340,6 +355,9 @@ namespace GuessMelody.Core.Game
             CurrentWinner = null;
             TrackFile = null;
             Category = null;
+            _pauseMoment = null;
+            _answerSecondsElapsed = 0;
+            CurrentScore = 0;
             SetState(RoundState.Idle);
         }
 

@@ -14,6 +14,7 @@
     <WarningLevel>4</WarningLevel>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -106,11 +107,35 @@
       <DependentUpon>GameSettingsWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Wpf\AppService.cs" />
+    <Compile Include="Wpf\Converters\BoolToVisibilityConverter.cs" />
+    <Compile Include="Wpf\Converters\LevelToBrushConverter.cs" />
+    <Compile Include="Wpf\GameController.cs" />
+    <Compile Include="Wpf\Logging\AppLogger.cs" />
     <Compile Include="Wpf\Tabs\ButtonsTabView.xaml.cs">
       <DependentUpon>ButtonsTabView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Wpf\Tabs\FoldersTabView.xaml.cs">
+      <DependentUpon>FoldersTabView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Wpf\Tabs\GameTabView.xaml.cs">
       <DependentUpon>GameTabView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Wpf\Tabs\LaunchTabView.xaml.cs">
+      <DependentUpon>LaunchTabView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Wpf\Tabs\LogsTabView.xaml.cs">
+      <DependentUpon>LogsTabView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Wpf\Tabs\SettingsTabView.xaml.cs">
+      <DependentUpon>SettingsTabView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Wpf\ViewModels\GameScreenViewModel.cs" />
+    <Compile Include="Wpf\ViewModels\HostConsoleViewModel.cs" />
+    <Compile Include="Wpf\Views\GameScreenWindow.xaml.cs">
+      <DependentUpon>GameScreenWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Wpf\Views\HostConsoleWindow.xaml.cs">
+      <DependentUpon>HostConsoleWindow.xaml</DependentUpon>
     </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -124,7 +149,6 @@
     <Compile Include="Core\Audio\NullAudioEngine.cs" />
     <Compile Include="Core\Game\PressArbiter.cs" />
     <Compile Include="Core\Game\RoundEngine.cs" />
-    <Compile Include="Core\Infrastructure\EspButtonHub.cs" />
     <Compile Include="Core\Models\ButtonBindings.cs" />
     <Compile Include="Core\Models\Enums.cs" />
     <Compile Include="Core\Models\FolderConfig.cs" />
@@ -156,7 +180,31 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Wpf\Tabs\FoldersTabView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Wpf\Tabs\GameTabView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Wpf\Tabs\LaunchTabView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Wpf\Tabs\LogsTabView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Wpf\Tabs\SettingsTabView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Wpf\Views\GameScreenWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Wpf\Views\HostConsoleWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -189,14 +237,12 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Wpf\Converters\" />
+    <Folder Include="Core\Infrastructure\" />
     <Folder Include="Wpf\Models\" />
     <Folder Include="Wpf\Resources\Images\" />
     <Folder Include="Wpf\Resources\Sounds\" />
     <Folder Include="Wpf\Resources\Styles\" />
     <Folder Include="Wpf\Utils\" />
-    <Folder Include="Wpf\ViewModels\" />
-    <Folder Include="Wpf\Views\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

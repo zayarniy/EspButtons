@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 
 namespace GuessMelody.Core.Models
 {
@@ -9,10 +9,16 @@ namespace GuessMelody.Core.Models
         public string TrackFile { get; set; }
         public string WinnerMac { get; set; }
         public string WinnerName { get; set; }
+        public int Score { get; set; }          // â† Ð”ÐžÐ‘ÐÐ’Ð›Ð•ÐÐž
         public EndReason Reason { get; set; }
-        public double AnswerTimeSec { get; set; }  // ñêîëüêî ñåêóíä îò ïàóçû äî «Äà/Íåò»
+        public double AnswerTimeSec { get; set; }          // â† Ð”ÐžÐ‘ÐÐ’Ð›Ð•ÐÐž
 
         public DateTime StartedUtc { get; set; }
         public DateTime FinishedUtc { get; set; }
+
+        // Ð£Ð´Ð¾Ð±Ð½Ñ‹Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ðµ Ð´Ð»Ñ UI
+        public string StartedLocal => StartedUtc.ToLocalTime().ToString("HH:mm:ss");
+        public string FinishedLocal => FinishedUtc.ToLocalTime().ToString("HH:mm:ss");
+        public string ScoreText => Score == 0 ? "0" : (Score > 0 ? $"+{Score}" : Score.ToString());
     }
 }

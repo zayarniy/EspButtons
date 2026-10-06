@@ -3,7 +3,7 @@ using GuessMelody.Core.Audio;
 using GuessMelody.Core.Game;
 using GuessMelody.Core.Models;
 using GuessMelody.Core.Storage;
-using static GuessMelody.Core.Models.ButtonInfo;
+
 
 namespace GuessMelody.Wpf
 {
@@ -46,6 +46,9 @@ namespace GuessMelody.Wpf
             }
 
             Audio = new NaAudioEngine();
+        
+    // ButtonService пока null — подключим позже в StartServer.
+         Game.GameController.Instance.Initialize(Audio, FolderManager, null, GameSettings);
         }
 
         /// <summary>
