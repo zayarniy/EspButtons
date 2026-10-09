@@ -70,7 +70,7 @@ namespace GuessMelody.Wpf
             ButtonService.ApplyBindings(ButtonBindings.Bindings);
 
             Hub.Start();
-            //GameController.Instance.Initialize(Audio, FolderManager, ButtonService, GameSettings);
+            GameController.Instance.Initialize(Audio, FolderManager, ButtonService, GameSettings);
             AppLogger.Instance.Info("Сервер запущен.");
         }
 
