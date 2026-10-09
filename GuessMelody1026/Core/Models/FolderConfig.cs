@@ -23,6 +23,8 @@ namespace GuessMelody.Core.Models
         public double DefaultPreviewStartSec { get; set; } = 0.0;
         public List<CategoryConfig> Categories { get; set; } = new List<CategoryConfig>();
 
+        public List<ButtonBinding> Bindings { get; } = new List<ButtonBinding>();
+
         // Êëþ÷ — "<relativePath>/<fileName>"
         public Dictionary<string, double> PreviewStartSec { get; set; }
             = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);

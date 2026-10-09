@@ -51,7 +51,7 @@
             <!-- Журнал -->
             <GroupBox Grid.Column="0" Header="Журнал" Margin="0,0,6,0">
                 <ListBox x:Name="LogList"
-                         ItemsSource="{Binding LogView}"
+                         ItemsSource="{Binding Entries}"
                          VirtualizingPanel.IsVirtualizing="True"
                          VirtualizingPanel.VirtualizationMode="Recycling"
                          ScrollViewer.HorizontalScrollBarVisibility="Auto">

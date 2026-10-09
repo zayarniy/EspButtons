@@ -189,6 +189,11 @@ namespace GuessMelody.Core.Game
             _config.PreviewStartSec.Remove(_config.Key(cat, trackName));
         }
 
+        public void RefreshPaths()
+        {
+            ResolveFullPaths();
+        }
+
         // =============================================================
         // Утилиты
         // =============================================================

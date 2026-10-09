@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GuessMelody.Wpf.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -465,7 +466,11 @@ namespace GuessMelody.Core.Game
         // =============================================================
         // Вспомогательное
         // =============================================================
-        private void Log(string s) => SafeRaise(RawLog, s);
+        private void Log(string s)
+        {
+            SafeRaise(RawLog, s);
+            AppLogger.Instance.Info($"[EspButtonHub] {s}");
+        }
 
         private void SafeRaise<T>(EventHandler<T> handler, T args)
         {

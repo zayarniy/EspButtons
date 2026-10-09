@@ -93,6 +93,8 @@
     <Compile Include="Core\Game\ButtonService.cs" />
     <Compile Include="Core\Game\FolderManager.cs" />
     <Compile Include="Core\Models\ButtonSnapshot.cs" />
+    <Compile Include="Core\Models\GamePreset.cs" />
+    <Compile Include="Core\Models\PresetService.cs" />
     <Compile Include="Tests\EspButtonHub.cs" />
     <Compile Include="Tests\AudioTestWindow.xaml.cs">
       <DependentUpon>AudioTestWindow.xaml</DependentUpon>

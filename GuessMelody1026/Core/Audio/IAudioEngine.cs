@@ -11,6 +11,8 @@ namespace GuessMelody.Core.Audio
         void Stop();
         void Seek(TimeSpan position);
 
+        TimeSpan PlayOneShotAndWait(string file, float volume = 1.0f, int maxWaitMs = 5000);
+
         bool IsPlaying { get; }
         TimeSpan Position { get; }
         TimeSpan Duration { get; }

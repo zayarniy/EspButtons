@@ -62,18 +62,54 @@ namespace GuessMelody.Wpf.Game
             _buttons = buttons;
             _settings = settings;
 
-            _engine = new RoundEngine(audio, settings, folders.Config);
 
+            ResetEngine();
+            _engine = new RoundEngine(audio, settings, folders);
+            _engine.StateChanged += OnEngineStateChanged;
+            _engine.Message += OnEngineMessage;
+            _engine.PressAccepted += OnEnginePressAccepted;
+            _engine.RoundFinished += OnEngineRoundFinished;
+            AttachButtons();
+
+        }
             // Прокидываем события наружу
-            _engine.StateChanged += (s, st) => StateChanged?.Invoke(this, EventArgs.Empty);
-            _engine.Message += (s, m) => Message?.Invoke(this, m);
-            _engine.PressAccepted += (s, p) => PressReceived?.Invoke(this, p);
-            _engine.RoundFinished += (s, r) => OnRoundFinished(r);
+            private void OnEngineStateChanged(object s, RoundState st)
+        {
+            AppLogger.Instance.State($"Состояние: {st}");
+            StateChanged?.Invoke(this, EventArgs.Empty);
+        }
+        private void OnEngineMessage(object s, string m) { AppLogger.Instance.Info(m); }
+        private void OnEnginePressAccepted(object s, PressEvent p)
+        {
+            AppLogger.Instance.Press($"Принят ответ: {p.Mac}");
+            PressReceived?.Invoke(this, p);
+        }
+        private void OnEngineRoundFinished(object s, RoundRecord r) {
+            AppLogger.Instance.State(
+                $"Раунд {r.RoundNumber} завершён: {r.Reason}, " +
+                $"категория «{r.Category}», победитель «{r.WinnerName ?? "—"}», " +
+                $"балл {r.Score}");
+               OnRoundFinished(r);
+
+        }
+        //_engine.StateChanged += (s, st) =>
+        //    {
+        //        AppLogger.Instance.State($"Состояние: {st}");
+        //        StateChanged?.Invoke(this, EventArgs.Empty);
+        //    };
+
+        //_engine.Message += (s, m) => AppLogger.Instance.Info(m);
+        //_engine.PressAccepted += (s, p) =>
+        //    {
+        //        AppLogger.Instance.Press($"Принят ответ: {p.Mac}");
+        //        PressReceived?.Invoke(this, p);
+        //    };
+        //    _engine.RoundFinished += (s, r) =>
+        //    {
+        //    };
 
             // Подписка на нажатия — если ButtonService появится позже,
             // вызывающая сторона должна дёрнуть AttachButtons().
-            AttachButtons();
-        }
 
         /// <summary>Переподключиться к ButtonService (после Start/Stop сервера).</summary>
         public void AttachButtons()
@@ -83,6 +119,28 @@ namespace GuessMelody.Wpf.Game
             _buttons.PressReceived -= OnPress;
             _buttons.PressReceived += OnPress;
         }
+
+        public void ResetEngine()
+        {
+            if (_engine != null)
+            {
+                // отписываемся
+                _engine.StateChanged -= OnEngineStateChanged;
+                _engine.Message -= OnEngineMessage;
+                _engine.PressAccepted -= OnEnginePressAccepted;
+                _engine.RoundFinished -= OnEngineRoundFinished;
+
+                // останавливаем таймер
+                try { _engine.Dispose(); } catch { }
+                _engine = null;
+            }
+        }
+
+        // запомните делегаты-обёртки, чтобы можно было отписаться:
+        //private void OnEngineStateChanged(object s, RoundState st) { ... }
+        //private void OnEngineMessage(object s, string m) { ... }
+        //private void OnEnginePressAccepted(object s, PressEvent p) { ... }
+        //private void OnEngineRoundFinished(object s, RoundRecord r) { ... }
 
         // =============================================================
         // Публичные команды
@@ -115,10 +173,21 @@ namespace GuessMelody.Wpf.Game
 
             ScoreChanged?.Invoke(this, mac);
             _ = lastStarted;   // в истории score уже с учётом правки ниже
+
+            AppLogger.Instance.Score($"Ведущий: Да, {score:+#;-#;0} → {mac}");
         }
 
-        public void HostSaysNo() => _engine.HostSaysNo();
-        public void HostSaysNoOne() => _engine.HostSaysNoOne();
+        public void HostSaysNo() 
+            {
+            AppLogger.Instance.Score("Ведущий: Нет");
+            _engine.HostSaysNo();            
+            }
+        //public void HostSaysNoOne() => _engine.HostSaysNoOne();
+        public void HostSaysNoOne()
+        {
+            AppLogger.Instance.State("Ведущий: Никто не ответил");
+            _engine.HostSaysNoOne();
+        }
 
         public void ResetScores()
         {
@@ -146,12 +215,20 @@ namespace GuessMelody.Wpf.Game
         // =============================================================
         // Обработчики
         // =============================================================
+        //private void OnPress(object s, PressEvent p)
+        //{
+        //    // Запоминаем нажатие как кандидата в победители
+        //    _engine.OnPress(p);
+
+        //    // Сообщаем всем окнам — они обновят «кто первый» и подсветку
+        //    PressReceived?.Invoke(this, p);
+        //}
+
         private void OnPress(object s, PressEvent p)
         {
-            // Запоминаем нажатие как кандидата в победители
+            var name = _buttons?.GetByMac(p.Mac)?.Label ?? p.Mac;
+            AppLogger.Instance.Press($"🔴 Нажатие: {name}  seq={p.Seq}");
             _engine.OnPress(p);
-
-            // Сообщаем всем окнам — они обновят «кто первый» и подсветку
             PressReceived?.Invoke(this, p);
         }
 

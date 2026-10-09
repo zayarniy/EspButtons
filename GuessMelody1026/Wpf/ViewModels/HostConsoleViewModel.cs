@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.RightsManagement;
 using System.Windows.Threading;
 using GuessMelody.Core.Audio;
 using GuessMelody.Core.Models;
@@ -139,7 +140,7 @@ namespace GuessMelody.Wpf.ViewModels
         // =============================================================
         // Обновление из Engine
         // =============================================================
-        private void RefreshFromEngine()
+        public void RefreshFromEngine()
         {
             var e = _gc.Engine;
             if (e == null) return;

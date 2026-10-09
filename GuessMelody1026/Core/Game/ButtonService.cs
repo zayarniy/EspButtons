@@ -1,8 +1,9 @@
-﻿using System;
+﻿using GuessMelody.Core.Models;
+using GuessMelody.Wpf.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using GuessMelody.Core.Models;
 
 
 namespace GuessMelody.Core.Game
@@ -36,13 +37,21 @@ namespace GuessMelody.Core.Game
 
         public ButtonService(EspButtonHub hub)
         {
+            // Проверка аргумента
             _hub = hub ?? throw new ArgumentNullException(nameof(hub));
-
+            // Подписка на события Hub
             _hub.ButtonConnected += Hub_ButtonConnected;
             _hub.ButtonReconnected += Hub_ButtonReconnected;
             _hub.ButtonDisconnected += Hub_ButtonDisconnected;
             _hub.PressReceived += Hub_PressReceived;
             _hub.RawLog += (s, m) => RawLog?.Invoke(this, m);
+
+            // Подключаем логирование в AppLogger
+            _hub.RawLog += (s, m) => AppLogger.Instance.Raw(m);
+            _hub.ButtonConnected += (s, e) => AppLogger.Instance.Info($"🟢 Кнопка подключилась: {e.Button.Mac}");
+            _hub.ButtonReconnected += (s, e) => AppLogger.Instance.Info($"🔗 Кнопка вернулась: {e.Button.Mac}");
+            _hub.ButtonDisconnected += (s, e) => AppLogger.Instance.Info($"🔌 Кнопка потеряна: {e.Button.Mac}");
+            _hub.CommandAck += (s, e) => AppLogger.Instance.Info($"[ACK {e.From}] {e.Payload}");
         }
 
         // =============================================================

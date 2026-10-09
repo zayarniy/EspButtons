@@ -1,8 +1,10 @@
-﻿using System;
-using GuessMelody.Core.Audio;
+﻿using GuessMelody.Core.Audio;
 using GuessMelody.Core.Game;
 using GuessMelody.Core.Models;
 using GuessMelody.Core.Storage;
+using GuessMelody.Wpf.Game;
+using GuessMelody.Wpf.Logging;
+using System;
 
 
 namespace GuessMelody.Wpf
@@ -15,7 +17,7 @@ namespace GuessMelody.Wpf
         // --- Пути к JSON ---
         public static string GameSettingsPath { get; } = "game.json";
         public static string ButtonBindingsPath { get; } = "buttons.json";
-        public static string FolderConfigPath { get; } = "folders.json";
+        public static string FolderConfigPath { get; private set; } = "folders.json";
 
         // --- Настройки / конфиги ---
         public static GameSettings GameSettings { get; private set; }
@@ -27,10 +29,12 @@ namespace GuessMelody.Wpf
         public static ButtonService ButtonService { get; private set; }
         public static FolderManager FolderManager { get; private set; }
         public static NaAudioEngine Audio { get; private set; }
+        
 
         // --- Состояние сервера ---
         public static bool IsServerRunning => Hub != null;
-
+        public static string CurrentPresetPath { get; private set; } = null;
+        public static void SetCurrentPresetPath(string path) => CurrentPresetPath = path;
         public static void Initialize()
         {
             // Загружаем конфиги (или создаём дефолтные)
@@ -42,7 +46,9 @@ namespace GuessMelody.Wpf
             if (!string.IsNullOrWhiteSpace(FolderConfig.RootPath) &&
                 System.IO.Directory.Exists(FolderConfig.RootPath))
             {
-                try { FolderManager.Scan(); } catch { /* ignore */ }
+                try { 
+                    FolderManager.Scan();
+                } catch { /* ignore */ }
             }
 
             Audio = new NaAudioEngine();
@@ -57,16 +63,28 @@ namespace GuessMelody.Wpf
         public static void StartServer(int port)
         {
             if (IsServerRunning) return;
-
+           // GameController.Instance.ResetEngine();
+            AppLogger.Instance.Info($"Запуск UDP-сервера на порту {port}");
             Hub = new EspButtonHub(port, port);
             ButtonService = new ButtonService(Hub);
             ButtonService.ApplyBindings(ButtonBindings.Bindings);
 
             Hub.Start();
+            //GameController.Instance.Initialize(Audio, FolderManager, ButtonService, GameSettings);
+            AppLogger.Instance.Info("Сервер запущен.");
+        }
+
+
+
+        public static void SetFolderConfigPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+            FolderConfigPath = path;
         }
 
         public static void StopServer()
         {
+            AppLogger.Instance.Info("Остановка сервера.");
             try { ButtonService?.Dispose(); } catch { }
             try { Hub?.Dispose(); } catch { }
             ButtonService = null;

@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using GuessMelody.Core.Models;
 using GuessMelody.Wpf.Game;
+using GuessMelody.Wpf.Logging;
 using GuessMelody.Wpf.ViewModels;
 using GuessMelody.Wpf.Views;
 
@@ -313,6 +314,7 @@ namespace GuessMelody.Wpf.Tabs
 
         private void Log(string s)
         {
+            AppLogger.Instance.Info(s);
             LogList.Items.Add($"[{DateTime.Now:HH:mm:ss.fff}] {s}");
             if (LogList.Items.Count > 500) LogList.Items.RemoveAt(0);
             LogList.ScrollIntoView(LogList.Items[LogList.Items.Count - 1]);

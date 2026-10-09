@@ -29,7 +29,7 @@ namespace GuessMelody.Wpf.Tabs
             _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
             _uiTimer.Tick += (_, __) => UpdatePlaybackUI();
 
-            Loaded += (_, __) => { _uiTimer.Start(); RebuildTree(); };
+            Loaded += (_, __) => { _uiTimer.Start(); RebuildTree(); RootPathText.Text = Config?.RootPath ?? "(не задана)"; };
             Unloaded += (_, __) => _uiTimer.Stop();
         }
 
@@ -69,14 +69,118 @@ namespace GuessMelody.Wpf.Tabs
             catch (Exception ex) { Log("Ошибка скана: " + ex.Message); }
         }
 
+        // =============================================================
+        // Сохранить в текущий файл
+        // =============================================================
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 AppServices.SaveFolderConfig();
+                UpdateConfigPathText();
                 Log($"Сохранено → {Path.GetFullPath(AppServices.FolderConfigPath)}");
             }
             catch (Exception ex) { Log("Ошибка сохранения: " + ex.Message); }
+        }
+
+        // =============================================================
+        // Показ текущего пути файла настроек
+        // =============================================================
+        private void UpdateConfigPathText()
+        {
+            try
+            {
+                ConfigPathText.Text = Path.GetFullPath(AppServices.FolderConfigPath);
+            }
+            catch
+            {
+                ConfigPathText.Text = AppServices.FolderConfigPath;
+            }
+        }
+
+        // =============================================================
+        // Загрузить из...
+        // =============================================================
+        private void LoadFrom_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Загрузить настройки папки",
+                Filter = "JSON (*.json)|*.json|Все файлы (*.*)|*.*",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            if (dlg.ShowDialog() != true) return;
+
+            try
+            {
+                var loaded = GuessMelody.Core.Storage.JsonStore
+                    .Load<FolderConfig>(dlg.FileName);
+
+                // Копируем поля в существующий объект — чтобы не рвать ссылки
+                Config.RootPath = loaded.RootPath;
+                Config.DefaultPreviewStartSec = loaded.DefaultPreviewStartSec;
+                Config.Categories = loaded.Categories;
+                Config.PreviewStartSec = loaded.PreviewStartSec;
+
+                // Пересканируем — на случай, если папка изменилась на диске
+                Manager.Scan();
+
+                // Делаем этот файл активным — автосохранение пойдёт в него
+                AppServices.SetFolderConfigPath(dlg.FileName);
+
+                // Обновляем UI
+                DefaultStartBox.Text = Config.DefaultPreviewStartSec.ToString("F1");
+                RootPathText.Text = Config.RootPath;
+                UpdateConfigPathText();
+                RebuildTree();
+
+                Log($"Загружено из {dlg.FileName}. " +
+                    $"Категорий: {Manager.TotalCategories}, треков: {Manager.TotalTracks}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ошибка загрузки",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                Log("Ошибка загрузки: " + ex.Message);
+            }
+        }
+
+        // =============================================================
+        // Сохранить как...
+        // =============================================================
+        private void SaveAs_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "Сохранить настройки папки",
+                Filter = "JSON (*.json)|*.json|Все файлы (*.*)|*.*",
+                FileName = Path.GetFileName(AppServices.FolderConfigPath),
+                DefaultExt = ".json",
+                AddExtension = true,
+                OverwritePrompt = true
+            };
+
+            if (dlg.ShowDialog() != true) return;
+
+            try
+            {
+                // Сохраняем во ВЫБРАННЫЙ файл
+                GuessMelody.Core.Storage.JsonStore.Save(dlg.FileName, Config);
+
+                // Делаем этот файл активным — дальше автосохранение идёт туда
+                AppServices.SetFolderConfigPath(dlg.FileName);
+
+                UpdateConfigPathText();
+                Log($"Сохранили как → {dlg.FileName}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ошибка сохранения",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                Log("Ошибка сохранения как: " + ex.Message);
+            }
         }
 
         private void Load_Click(object sender, RoutedEventArgs e)

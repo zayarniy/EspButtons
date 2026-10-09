@@ -1,8 +1,9 @@
-using System;
-using System.IO;
 //using NAudio.Vorbis;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace GuessMelody.Core.Audio
 {
@@ -57,17 +58,24 @@ namespace GuessMelody.Core.Audio
 
             lock (_lock)
             {
-                StopInternal();
+                // 1. Полностью останавливаем и освобождаем предыдущий output
+                try { _output?.Stop(); } catch { }
+                try { _output?.Dispose(); } catch { }
+                _output = null;
 
+                try { _reader?.Dispose(); } catch { }
+                _reader = null;
+
+                _mixer = null;
+                _volumeProvider = null;
+
+                // 2. Создаём новый reader и микшер
                 _reader = CreateReader(file);
                 _volumeProvider = new VolumeSampleProvider(_reader.ToSampleProvider())
                 {
                     Volume = _volume
                 };
 
-                EnsureOutput();
-
-                // Микшер: основной поток + one-shot'ы
                 _mixer = new MixingSampleProvider(
                     WaveFormat.CreateIeeeFloatWaveFormat(
                         _reader.WaveFormat.SampleRate,
@@ -77,8 +85,27 @@ namespace GuessMelody.Core.Audio
                 };
                 _mixer.AddMixerInput(_volumeProvider);
 
+                // 3. Создаём новый WaveOutEvent и инициализируем его ТОЛЬКО один раз
+                _output = new WaveOutEvent { DesiredLatency = 100 };
+                _output.PlaybackStopped += Output_PlaybackStopped;
                 _output.Init(_mixer);
+            }
+        }
 
+        public void Play()
+        {
+            lock (_lock)
+            {
+                if (_output == null || _reader == null) return;
+
+                // Если дошли до конца — в начало
+                if (_reader.Position >= _reader.Length - 1)
+                    _reader.Position = 0;
+
+                // Если уже играет — не трогаем
+                if (_output.PlaybackState == PlaybackState.Playing) return;
+
+                _output.Play();
             }
         }
 
@@ -113,22 +140,7 @@ namespace GuessMelody.Core.Audio
         // =============================================================
         // Управление
         // =============================================================
-        public void Play()
-        {
-            if (_output == null || _reader == null) return;
-            lock (_lock)
-            {
-                if (_output.PlaybackState == PlaybackState.Paused ||
-                    _output.PlaybackState == PlaybackState.Stopped)
-                {
-                    // Если дошли до конца — сначала отмотаем в начало
-                    if (_reader.Position >= _reader.Length - 1)
-                        _reader.Position = 0;
 
-                    _output.Play();
-                }
-            }
-        }
 
         public void Pause()
         {
@@ -172,46 +184,43 @@ namespace GuessMelody.Core.Audio
         // =============================================================
         public void PlayOneShot(string file, float volume = 1.0f)
         {
-            if (string.IsNullOrWhiteSpace(file) || !File.Exists(file)) return;
+            if (string.IsNullOrWhiteSpace(file) || !File.Exists(file))
+                return;
 
-            try
+            Task.Run(() =>
             {
-                var reader = CreateReader(file);
-                var sp = reader.ToSampleProvider();
-
-                // Подгоняем под формат микшера
-                if (_mixer != null && sp.WaveFormat.SampleRate != _mixer.WaveFormat.SampleRate)
+                WaveOutEvent oneShot = null;
+                WaveStream reader = null;
+                try
                 {
-                    sp = new WdlResamplingSampleProvider(sp, _mixer.WaveFormat.SampleRate);
+                    reader = CreateReader(file);
+                    var sp = reader.ToSampleProvider();
+                    var withVolume = new VolumeSampleProvider(sp) { Volume = volume };
+
+                    oneShot = new WaveOutEvent { DesiredLatency = 100 };
+                    oneShot.Init(withVolume);
+                    oneShot.Play();
+
+                    // Ждём завершения, потом освобождаем
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    while (oneShot.PlaybackState == PlaybackState.Playing &&
+                           sw.ElapsedMilliseconds < 10_000)
+                    {
+                        System.Threading.Thread.Sleep(20);
+                    }
                 }
-                if (_mixer != null && sp.WaveFormat.Channels != _mixer.WaveFormat.Channels)
+                catch (Exception ex)
                 {
-                    if (sp.WaveFormat.Channels == 1 && _mixer.WaveFormat.Channels == 2)
-                        sp = new MonoToStereoSampleProvider(sp);
-                    else if (sp.WaveFormat.Channels == 2 && _mixer.WaveFormat.Channels == 1)
-                        sp = new StereoToMonoSampleProvider(sp);
+                    Console.Error.WriteLine($"[NaAudioEngine] OneShot error: {ex.Message}");
                 }
-
-                var withVolume = new VolumeSampleProvider(sp) { Volume = volume };
-
-                // Отдельный WaveOutEvent для одного звука — надёжнее,
-                // не блокирует основной поток и не требует сложного учёта
-                // жизненного цикла в микшере.
-                var outEvent = new WaveOutEvent { DesiredLatency = 100 };
-                outEvent.Init(withVolume);
-                outEvent.PlaybackStopped += (_, __) =>
+                finally
                 {
-                    try { outEvent.Dispose(); } catch { }
-                    try { reader.Dispose(); } catch { }
-                };
-                outEvent.Play();
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"[NaAudioEngine] OneShot error: {ex.Message}");
-            }
+                    try { oneShot?.Stop(); } catch { }
+                    try { oneShot?.Dispose(); } catch { }
+                    try { reader?.Dispose(); } catch { }
+                }
+            });
         }
-
         // =============================================================
         // События
         // =============================================================
@@ -261,6 +270,56 @@ namespace GuessMelody.Core.Audio
                 _mixer = null;
                 _volumeProvider = null;
             }
+        }
+
+   //     public TimeSpan PlayOneShotAndWait(string file, float volume = 1.0f, int maxWaitMs = 5000)
+        //{
+        //    Console.WriteLine($"[Audio] OneShotAndWait {file}");
+        //    return TimeSpan.FromMilliseconds(200);   // имитируем короткую задержку
+        //}
+
+        /// <summary>
+        /// Проиграть короткий звук и дождаться его окончания.
+        /// Возвращает фактическое время воспроизведения.
+        /// </summary>
+        public TimeSpan PlayOneShotAndWait(string file, float volume = 1.0f,
+                                           int maxWaitMs = 5000)
+        {
+            if (string.IsNullOrWhiteSpace(file) || !File.Exists(file))
+                return TimeSpan.Zero;
+
+            WaveStream reader = null;
+            WaveOutEvent oneShot = null;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
+            try
+            {
+                reader = CreateReader(file);
+                var sp = reader.ToSampleProvider();
+                var withVolume = new VolumeSampleProvider(sp) { Volume = volume };
+
+                oneShot = new WaveOutEvent { DesiredLatency = 100 };
+                oneShot.Init(withVolume);
+                oneShot.Play();
+
+                while (oneShot.PlaybackState == PlaybackState.Playing &&
+                       sw.ElapsedMilliseconds < maxWaitMs)
+                {
+                    System.Threading.Thread.Sleep(10);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[NaAudioEngine] PlayOneShotAndWait error: {ex.Message}");
+            }
+            finally
+            {
+                try { oneShot?.Stop(); } catch { }
+                try { oneShot?.Dispose(); } catch { }
+                try { reader?.Dispose(); } catch { }
+            }
+
+            return sw.Elapsed;
         }
     }
 }
