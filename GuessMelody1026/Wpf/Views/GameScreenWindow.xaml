@@ -4,7 +4,7 @@
         Title="Угадай мелодию — экран игроков"
         Height="600" Width="800"
         MinHeight="480" MinWidth="640"
-        WindowStyle="None"
+        WindowStyle="SingleBorderWindow"
         ResizeMode="CanResizeWithGrip"
         Background="Black"
         WindowStartupLocation="CenterScreen"

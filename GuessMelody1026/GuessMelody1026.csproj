@@ -112,6 +112,8 @@
     <Compile Include="Wpf\Converters\BoolToVisibilityConverter.cs" />
     <Compile Include="Wpf\Converters\LevelToBrushConverter.cs" />
     <Compile Include="Wpf\GameController.cs" />
+    <Compile Include="Wpf\Game\EmulatedButtonsService.cs" />
+    <Compile Include="Wpf\Input\GlobalHotkeyManager.cs" />
     <Compile Include="Wpf\Logging\AppLogger.cs" />
     <Compile Include="Wpf\Tabs\ButtonsTabView.xaml.cs">
       <DependentUpon>ButtonsTabView.xaml</DependentUpon>

@@ -29,7 +29,10 @@ namespace GuessMelody.Wpf.Tabs
             _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
             _uiTimer.Tick += (_, __) => UpdatePlaybackUI();
 
-            Loaded += (_, __) => { _uiTimer.Start(); RebuildTree(); RootPathText.Text = Config?.RootPath ?? "(не задана)"; };
+            Loaded += (_, __) => { _uiTimer.Start();
+                //RebuildTree();
+                Dispatcher.BeginInvoke(new Action(RebuildTree));
+                RootPathText.Text = Config?.RootPath ?? "(не задана)"; };
             Unloaded += (_, __) => _uiTimer.Stop();
         }
 
@@ -50,7 +53,8 @@ namespace GuessMelody.Wpf.Tabs
                 Log($"Корневая папка: {dlg.SelectedPath}");
                 Log($"Категорий: {Manager.TotalCategories}, треков: {Manager.TotalTracks}");
                 RootPathText.Text = dlg.SelectedPath;
-                RebuildTree();
+                //RebuildTree();
+                Dispatcher.BeginInvoke(new Action(RebuildTree));
                 AutoSave();
             }
             catch (Exception ex) { Log("Ошибка выбора папки: " + ex.Message); }
@@ -63,7 +67,8 @@ namespace GuessMelody.Wpf.Tabs
                 Manager.Scan();
                 Log($"Пересканировано. Категорий: {Manager.TotalCategories}, " +
                     $"треков: {Manager.TotalTracks}");
-                RebuildTree();
+                //RebuildTree();
+                Dispatcher.BeginInvoke(new Action(RebuildTree));
                 AutoSave();
             }
             catch (Exception ex) { Log("Ошибка скана: " + ex.Message); }
@@ -134,7 +139,8 @@ namespace GuessMelody.Wpf.Tabs
                 DefaultStartBox.Text = Config.DefaultPreviewStartSec.ToString("F1");
                 RootPathText.Text = Config.RootPath;
                 UpdateConfigPathText();
-                RebuildTree();
+                //RebuildTree();
+                Dispatcher.BeginInvoke(new Action(RebuildTree));
 
                 Log($"Загружено из {dlg.FileName}. " +
                     $"Категорий: {Manager.TotalCategories}, треков: {Manager.TotalTracks}");
@@ -202,7 +208,8 @@ namespace GuessMelody.Wpf.Tabs
 
                 DefaultStartBox.Text = Config.DefaultPreviewStartSec.ToString("F1");
                 RootPathText.Text = Config.RootPath;
-                RebuildTree();
+                //RebuildTree();
+                Dispatcher.BeginInvoke(new Action(RebuildTree));
                 Log($"Загружено. Категорий: {Manager.TotalCategories}, треков: {Manager.TotalTracks}");
             }
             catch (Exception ex) { Log("Ошибка загрузки: " + ex.Message); }
@@ -228,8 +235,10 @@ namespace GuessMelody.Wpf.Tabs
         // =============================================================
         private void RebuildTree()
         {
+            
+            if (Tree==null) return;
             Tree.Items.Clear();
-
+            if (Manager==null || Manager.Categories==null) return;  
             foreach (var cat in Manager.Categories)
             {
                 var catNode = new TreeViewItem
@@ -238,7 +247,7 @@ namespace GuessMelody.Wpf.Tabs
                     Tag = cat,
                     IsExpanded = false
                 };
-
+                if (cat.Tracks == null) return;
                 foreach (var track in cat.Tracks)
                 {
                     catNode.Items.Add(new TreeViewItem

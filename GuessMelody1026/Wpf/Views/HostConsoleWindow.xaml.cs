@@ -40,19 +40,19 @@ namespace GuessMelody.Wpf.Views
                 UpdatePresetPathText();
             };
             // Хоткеи для эмуляции кнопок: F1..F6
-            PreviewKeyDown += HostConsoleWindow_PreviewKeyDown;
+           // PreviewKeyDown += HostConsoleWindow_PreviewKeyDown;
         }
-        private void HostConsoleWindow_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key < Key.F1 || e.Key > Key.F6) return;
+        //private void HostConsoleWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        //{
+        //    if (e.Key < Key.F1 || e.Key > Key.F6) return;
 
-            int slot = e.Key - Key.F1;   // 0..5
-            var mac = ResolveSlotMac(slot);
-            if (string.IsNullOrEmpty(mac)) return;
+        //    int slot = e.Key - Key.F1;   // 0..5
+        //    var mac = ResolveSlotMac(slot);
+        //    if (string.IsNullOrEmpty(mac)) return;
 
-            EmulatePress(mac);
-            e.Handled = true;
-        }
+        //    EmulatePress(mac);
+        //    e.Handled = true;
+        //}
 
         /// <summary>
         /// Возвращает MAC для слота 0..5.

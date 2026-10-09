@@ -2,14 +2,15 @@
 using GuessMelody.Core.Game;
 using GuessMelody.Core.Models;
 using GuessMelody.Core.Storage;
+using GuessMelody.Wpf;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading;
 using System.Windows.Forms;
+using System.Windows.Threading;
 
 namespace GuessMelody.Tests
 {
@@ -46,7 +47,8 @@ namespace GuessMelody.Tests
             }
 
             DefaultStartBox.Text = _config.DefaultPreviewStartSec.ToString("F1");
-            RebuildTree();
+            //RebuildTree();
+            Dispatcher.BeginInvoke(new Action(RebuildTree));
 
             _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
             _uiTimer.Tick += (_, __) => UpdatePlaybackUI();
@@ -83,7 +85,8 @@ namespace GuessMelody.Tests
                 Log($"Корневая папка: {dlg.SelectedPath}");
                 Log($"Категорий: {_manager.TotalCategories}, треков: {_manager.TotalTracks}");
                 RootPathText.Text = dlg.SelectedPath;
-                RebuildTree();
+                //RebuildTree();
+                Dispatcher.BeginInvoke(new Action(RebuildTree));
                 AutoSave();
             }
             catch (Exception ex) { Log("Ошибка выбора папки: " + ex.Message); }
@@ -95,7 +98,8 @@ namespace GuessMelody.Tests
             {
                 _manager.Scan();
                 Log($"Пересканировано. Категорий: {_manager.TotalCategories}, треков: {_manager.TotalTracks}");
-                RebuildTree();
+                //RebuildTree();
+                Dispatcher.BeginInvoke(new Action(RebuildTree));
                 AutoSave();
             }
             catch (Exception ex) { Log("Ошибка скана: " + ex.Message); }
@@ -119,7 +123,8 @@ namespace GuessMelody.Tests
                 _manager = new FolderManager(_config);
                 DefaultStartBox.Text = _config.DefaultPreviewStartSec.ToString("F1");
                 RootPathText.Text = _config.RootPath;
-                RebuildTree();
+                //RebuildTree();
+                Dispatcher.BeginInvoke(new Action(RebuildTree));
                 Log($"Загружено. Категорий: {_manager.TotalCategories}, треков: {_manager.TotalTracks}");
             }
             catch (Exception ex) { Log("Ошибка загрузки: " + ex.Message); }
@@ -145,6 +150,9 @@ namespace GuessMelody.Tests
         // =============================================================
         private void RebuildTree()
         {
+            if (Tree==null) return;  // На старте конструктора ещё не создано
+            var mgr = AppServices.FolderManager;
+            if (mgr == null || mgr.Config == null) return;
             Tree.Items.Clear();
 
             foreach (var cat in _manager.Categories)
