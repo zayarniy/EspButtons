@@ -136,6 +136,29 @@ namespace GuessMelody.Wpf.Game
             }
         }
 
+
+        /// <summary>Изменить счёт игрока на delta (+1/-1/...).</summary>
+        public void AddScore(string mac, int delta)
+        {
+            if (string.IsNullOrEmpty(mac)) return;
+
+            _scores.TryGetValue(mac, out var current);
+            int next = current + delta;
+
+            // Можно ограничить снизу нулём, если нужно:
+            // if (next < 0) next = 0;
+
+            _scores[mac] = next;
+            AppLogger.Instance.Score(
+                $"{GetDisplayName(mac)}: {current} → {next} ({(delta >= 0 ? "+" : "")}{delta})");
+            ScoreChanged?.Invoke(this, mac);
+        }
+
+        private string GetDisplayName(string mac)
+        {
+            var snap = _buttons?.GetByMac(mac);
+            return snap?.Label ?? mac;
+        }
         // запомните делегаты-обёртки, чтобы можно было отписаться:
         //private void OnEngineStateChanged(object s, RoundState st) { ... }
         //private void OnEngineMessage(object s, string m) { ... }
@@ -157,7 +180,7 @@ namespace GuessMelody.Wpf.Game
             _engine.StartRound(cat);
         }
 
-        public void HostSaysYes(int score)
+        public void HostSaysYes(int score=1)
         {
             var winner = _engine.CurrentWinner;
             if (winner == null) return;
@@ -173,6 +196,8 @@ namespace GuessMelody.Wpf.Game
 
             ScoreChanged?.Invoke(this, mac);
             _ = lastStarted;   // в истории score уже с учётом правки ниже
+
+
 
             AppLogger.Instance.Score($"Ведущий: Да, {score:+#;-#;0} → {mac}");
             

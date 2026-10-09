@@ -215,16 +215,20 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Margin="6,0" Padding="12,6"
-                                Background="#1E2A38" CornerRadius="8"
-                                BorderBrush="#37474F" BorderThickness="1">
+                Background="#1E2A38" CornerRadius="8"
+                BorderBrush="#37474F" BorderThickness="1"
+                Tag="{Binding Mac}"
+                MouseLeftButtonUp="ScoreTile_LeftClick"
+                MouseRightButtonUp="ScoreTile_RightClick"
+                ToolTip="ЛКМ: +1   ПКМ: −1">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding Name}"
-                                           FontSize="22" Foreground="#ECEFF1"
-                                           VerticalAlignment="Center" Margin="0,0,14,0"/>
+                           FontSize="22" Foreground="#ECEFF1"
+                           VerticalAlignment="Center" Margin="0,0,14,0"/>
                                 <TextBlock Text="{Binding Score}"
-                                           FontSize="30" FontWeight="Bold"
-                                           Foreground="#FFD54A"
-                                           VerticalAlignment="Center"/>
+                           FontSize="30" FontWeight="Bold"
+                           Foreground="#FFD54A"
+                           VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
                     </DataTemplate>

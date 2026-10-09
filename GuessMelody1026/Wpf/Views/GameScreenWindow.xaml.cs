@@ -1,9 +1,10 @@
-﻿using System;
+﻿using GuessMelody.Wpf.Game;
+using GuessMelody.Wpf.ViewModels;
+using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using GuessMelody.Wpf.ViewModels;
 
 namespace GuessMelody.Wpf.Views
 {
@@ -32,6 +33,8 @@ namespace GuessMelody.Wpf.Views
             }
         }
 
+
+
         // -------------------------------------------------------------
         // Клавиши 1–9
         // -------------------------------------------------------------
@@ -44,6 +47,24 @@ namespace GuessMelody.Wpf.Views
             if (idx >= 0)
             {
                 ViewModel.SelectCategory(idx);
+                e.Handled = true;
+            }
+        }
+
+        private void ScoreTile_LeftClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is string mac)
+            {
+                GameController.Instance.AddScore(mac, +1);
+                e.Handled = true;
+            }
+        }
+
+        private void ScoreTile_RightClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is string mac)
+            {
+                GameController.Instance.AddScore(mac, -1);
                 e.Handled = true;
             }
         }
