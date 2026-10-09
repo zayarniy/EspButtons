@@ -1,11 +1,12 @@
-﻿using System;
+﻿using GuessMelody.Core.Game;
+using GuessMelody.Core.Models;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using GuessMelody.Core.Game;
-using GuessMelody.Core.Models;
+using System.Windows.Threading;
 
 namespace GuessMelody.Wpf.ViewModels
 {
@@ -17,6 +18,7 @@ namespace GuessMelody.Wpf.ViewModels
         Answer,           // кто-то нажал, идёт отсчёт на ответ
         Result            // «Правильно» / «Неправильно»
     }
+
 
     public class CategoryTile : INotifyPropertyChanged
     {
@@ -65,6 +67,9 @@ namespace GuessMelody.Wpf.ViewModels
 
     public class GameScreenViewModel : INotifyPropertyChanged
     {
+
+        private DispatcherTimer _answerTimer;
+
         private readonly RoundEngine _engine;
 
         public ObservableCollection<CategoryTile> Categories { get; } = new ObservableCollection<CategoryTile>();
@@ -194,6 +199,18 @@ namespace GuessMelody.Wpf.ViewModels
             _engine.PressAccepted += (_, p) => OnPressAccepted(p);
             _engine.RoundFinished += (_, r) => OnRoundFinished(r);
             _engine.Message += (_, m) => { /* можно показывать в SubText */ };
+
+            _answerTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1000) };
+            _answerTimer.Tick += (_, __) =>
+            {
+                if (Mode == ScreenMode.Answer)
+                {
+                    var left = (int)Math.Ceiling(_engine.TimeLeftForAnswer.TotalSeconds);
+                    if (left < 0) left = 0;
+                    AnswerValue = left;
+                }
+            };
+            _answerTimer.Start();
         }
 
         // =============================================================

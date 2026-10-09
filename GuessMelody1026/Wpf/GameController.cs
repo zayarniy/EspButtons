@@ -175,6 +175,7 @@ namespace GuessMelody.Wpf.Game
             _ = lastStarted;   // в истории score уже с учётом правки ниже
 
             AppLogger.Instance.Score($"Ведущий: Да, {score:+#;-#;0} → {mac}");
+            
         }
 
         public void HostSaysNo() 

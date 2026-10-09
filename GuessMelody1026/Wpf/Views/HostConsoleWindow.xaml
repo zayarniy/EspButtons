@@ -251,7 +251,7 @@
                                     Orientation="Horizontal"
                                     HorizontalAlignment="Center"
                                     Margin="0,6,0,0">
-                            <Button Content="✅ ДА (+2)" Click="HostYes_Click"
+                            <Button Content="✅ ДА (+1)" Click="HostYes_Click"
                                     Padding="14,6" FontSize="14" Margin="0,0,6,0"
                                     Background="#66BB6A" Foreground="White"
                                     IsEnabled="{Binding AnswerActive}"/>

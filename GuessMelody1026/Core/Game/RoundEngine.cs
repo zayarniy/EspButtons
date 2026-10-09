@@ -247,7 +247,7 @@ namespace GuessMelody.Core.Game
         //}
 
         /// <summary>Ведущий нажал «Да» — применить балл и завершить раунд.</summary>
-        public void HostSaysYes(int score)
+        public void HostSaysYes(int score=1)
         {
             if (State != RoundState.WaitingAnswer && State != RoundState.TrackPlaying)
                 return;
@@ -267,13 +267,14 @@ namespace GuessMelody.Core.Game
             if (State != RoundState.WaitingAnswer) return;
             if (CurrentWinner == null) return;
 
-            TryPlay(_settings.WrongSoundFile);
+            _audio.PlayOneShot(_settings.WrongSoundFile);
 
+            // Заблокировать этого игрока до конца раунда
             _arbiter.Reject(CurrentWinner.Mac);
-            Message?.Invoke(this, $"Отклонён ответ {CurrentWinner.Mac}");
+            Message?.Invoke(this, $"Неверно: {CurrentWinner.Mac} выбывает из раунда");
             CurrentWinner = null;
 
-            // Если все известные MAC уже ответили «Нет» — закрываем раунд.
+            // Все ответили неверно — закрываем раунд
             if (_knownMacs != null && _arbiter.EveryoneRejected(_knownMacs))
             {
                 Message?.Invoke(this, "Все ответили неверно — раунд закрыт.");
@@ -282,11 +283,10 @@ namespace GuessMelody.Core.Game
                 return;
             }
 
-            // Возвращаемся к воспроизведению (позиция сохраняется).
-            _audio.Play();
+            // Возвращаемся к музыке и продолжаем ждать других
+            _audio.Play();                     // возобновление с той же позиции
             _playDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(_settings.PlayDurationSec);
             SetState(RoundState.TrackPlaying);
-            _tickTimer.Start();
         }
 
         /// <summary>Ведущий принудительно закрывает раунд (никто / вручную).</summary>
@@ -300,33 +300,28 @@ namespace GuessMelody.Core.Game
         // =============================================================
         // СОБЫТИЯ ОТ ESP
         // =============================================================
+
         public void OnPress(PressEvent e)
         {
             if (State != RoundState.TrackPlaying) return;
 
-            bool accepted = _arbiter.OnPress(e);
-            if (!accepted)
-            {
-                Message?.Invoke(this, $"Нажатие игнорировано: {e.Mac} (уже отвечал)");
-                return;
-            }
+            // Уже отвечал в этом раунде — игнор.
+            if (!_arbiter.OnPress(e)) return;
 
             var first = _arbiter.GetFirst();
-            if (first != null && CurrentWinner == null)
-            {
-                CurrentWinner = first;
-                _audio.Pause();
-                _pauseMoment = DateTime.UtcNow;
-                _answerSecondsElapsed = 0;
+            if (first == null) return;
+            if (CurrentWinner != null) return;   // кто-то уже отвечает
 
-                _answerDeadline = DateTime.UtcNow +
-                    TimeSpan.FromSeconds(_settings.AnswerSeconds);
-                SetState(RoundState.WaitingAnswer);
-                PressAccepted?.Invoke(this, first);
-                Message?.Invoke(this, $"Нажал первым: {first.Mac}");
-            }
+            CurrentWinner = first;
+            _audio.Pause();
+            _pauseMoment = DateTime.UtcNow;
+            _answerSecondsElapsed = 0;
+            _answerDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(_settings.AnswerSeconds);
+
+            SetState(RoundState.WaitingAnswer);
+            PressAccepted?.Invoke(this, first);
+            Message?.Invoke(this, $"Нажал первым: {first.Mac}");
         }
-
         // =============================================================
         // ВНУТРЕННЕЕ
         // =============================================================
@@ -355,10 +350,16 @@ namespace GuessMelody.Core.Game
 
                 if (DateTime.UtcNow >= _answerDeadline)
                 {
-                    Message?.Invoke(this, "Время ответа истекло — автоматически +0.");
-                    _audio.PlayOneShot(_settings.WrongSoundFile);
-                    MarkTrackAsPlayed();
-                    EndRound(EndReason.Scored);
+                    Message?.Invoke(this, "Время ответа истекло — ответ не засчитан.");
+
+                    // То же, что «Нет»: блокируем игрока, музыка продолжается.
+                    if (CurrentWinner != null)
+                        _arbiter.Reject(CurrentWinner.Mac);
+
+                    CurrentWinner = null;
+                    _audio.Play();
+                    _playDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(_settings.PlayDurationSec);
+                    SetState(RoundState.TrackPlaying);
                 }
                 return;
             }
