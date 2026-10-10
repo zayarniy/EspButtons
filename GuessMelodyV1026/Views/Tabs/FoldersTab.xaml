@@ -1,0 +1,17 @@
+﻿<UserControl x:Class="GuessMelody.Views.Tabs.FoldersTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="12">
+        <TextBlock Text="Папки (в разработке)" FontSize="18" FontWeight="Bold" Margin="0,0,0,12"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="Корневая папка:" Width="140" VerticalAlignment="Center"/>
+            <TextBox Width="500" Text="{Binding RootFolder, UpdateSourceTrigger=PropertyChanged}"
+                     VerticalContentAlignment="Center"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="Имя пресета:" Width="140" VerticalAlignment="Center"/>
+            <TextBox Width="240" Text="{Binding PresetName, UpdateSourceTrigger=PropertyChanged}"
+                     VerticalContentAlignment="Center"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>
