@@ -43,6 +43,7 @@ namespace GuessMelody
             services.AddSingleton<SettingsPresetService>();
 
 
+
             return services.BuildServiceProvider();
         }
     }

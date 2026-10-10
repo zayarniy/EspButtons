@@ -76,19 +76,19 @@
                   AlternatingRowBackground="#FAFAFA">
             <DataGrid.Columns>
                 <DataGridCheckBoxColumn Header="✓" Width="30"
-                                        Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"/>
-                <DataGridTextColumn Header="Имя" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Width="160"/>
-                <DataGridTextColumn Header="MAC" Binding="{Binding Mac}" Width="160" IsReadOnly="True"/>
-                <DataGridTextColumn Header="IP" Binding="{Binding LastIp}" Width="130" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Сост." Width="70"
-                                    Binding="{Binding Alive, Converter={StaticResource AliveConverter}}"
-                                    IsReadOnly="True"/>
-                <DataGridTextColumn Header="Нажатий" Binding="{Binding PressCount}" Width="70" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Доставка HB" Binding="{Binding DeliveryText}" Width="150" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Посл. seq" Binding="{Binding LastSeq}" Width="80" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Первый раз" Binding="{Binding FirstSeenLocal}" Width="90" IsReadOnly="True"/>
+                            Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="Имя"        Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Width="160"/>
+                <DataGridTextColumn Header="MAC"        Binding="{Binding Mac}"             Width="160" IsReadOnly="True"/>
+                <DataGridTextColumn Header="IP"         Binding="{Binding LastIp}"          Width="130" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Сост."      Binding="{Binding Alive, Converter={StaticResource AliveConverter}}"
+                        Width="70" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Нажатий"    Binding="{Binding PressCount}"      Width="70"  IsReadOnly="True"/>
+                <DataGridTextColumn Header="Доставка HB" Binding="{Binding DeliveryText}"   Width="150" IsReadOnly="True"/>
+                <DataGridTextColumn Header="HB, с назад" Binding="{Binding HbSecondsAgo}"   Width="90"  IsReadOnly="True"/>
+                <DataGridTextColumn Header="Посл. seq"  Binding="{Binding LastSeq}"         Width="80"  IsReadOnly="True"/>
+                <DataGridTextColumn Header="Первый раз" Binding="{Binding FirstSeenLocal}"  Width="90"  IsReadOnly="True"/>
                 <DataGridTextColumn Header="Последний раз" Binding="{Binding LastSeenLocal}" Width="100" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Тишина, с" Binding="{Binding SecondsSinceLastSeen}" Width="80" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Тишина, с"  Binding="{Binding SecondsSinceLastSeen}" Width="80" IsReadOnly="True"/>
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>

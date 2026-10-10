@@ -105,6 +105,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AnswerServer\AnswerStatePublisher.cs" />
+    <Compile Include="AnswerServer\GameStateSnapshot.cs" />
     <Compile Include="Converters\Converters.cs" />
     <Compile Include="Core\RoundTimer.cs" />
     <Compile Include="Services\AudioCoordinator.cs" />

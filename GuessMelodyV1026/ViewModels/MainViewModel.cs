@@ -29,13 +29,44 @@ namespace GuessMelody.ViewModels
             Log = log;
             AnswerServer = answerServer;
 
+            // Связываем GameTab с соседними VM — ему нужны ссылки для load/save
             Game.Buttons = Buttons;
-            Game.HookEngineEvents();
-            Game.Settings = Settings;
-            Game.Folders = Folders;
+            Game.Settings = settings;
+            Game.Folders = folders;
+
+            // Синхронизировать привязки кнопок при старте: если уже есть команды — разложить их
+            SyncStartupBindings();
 
             ExitCommand = new RelayCommand(_ =>
-                System.Windows.Application.Current.Shutdown());
+            {
+                SaveAutosave();
+                System.Windows.Application.Current.Shutdown();
+            });
+        }
+
+        private void SyncStartupBindings()
+        {
+            // если в GameSettings уже есть Teams (например, после автозагрузки) —
+            // разложим их по вкладке «Кнопки»
+            //var teams = Game.Buttons != null && Game != null ? null : null; // placeholder
+            // используем методы GameTab
+            // На старте просто ничего не делаем — LoadGame сам всё синхронизирует
+        }
+
+        private void SaveAutosave()
+        {
+            try
+            {
+                var dir = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "GuessMelody");
+                System.IO.Directory.CreateDirectory(dir);
+                var path = System.IO.Path.Combine(dir, "autosave.gmgame");
+
+                var s = Game.GetSettingsSnapshotForAutosave();
+                GuessMelody.Core.Serialization.JsonStore.Save(path, s);
+            }
+            catch { }
         }
 
         private string _statusText = "Готово";

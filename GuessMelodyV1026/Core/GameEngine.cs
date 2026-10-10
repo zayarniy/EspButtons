@@ -437,6 +437,36 @@ namespace GuessMelody.Core
             RaiseState();
         }
 
+        /// <summary>Полный сброс игрового состояния: очки, раунды, использованные треки, очередь нажатий.</summary>
+        public void NewGame()
+        {
+            RequestStopTrack?.Invoke(this, EventArgs.Empty);
+            _countdownTimer.Stop();
+            _answerTimer.Stop();
+
+            foreach (var t in Teams) t.Score = 0;
+            _playedByCategory.Clear();
+            _pressQueue.Clear();
+            _blockedThisRound.Clear();
+
+            CurrentRound = 0;
+            CurrentCategory = null;
+            CurrentCategoryIndex = -1;
+            CurrentTrack = null;
+            FirstPressedTeam = null;
+            State = RoundState.Idle;
+            CountdownLeftSec = 0;
+            AnswerLeftSec = 0;
+            TrackLeftSec = 0;
+            TrackTotalSec = 0;
+
+            ScoreChanged?.Invoke(this, EventArgs.Empty);
+            RemainingChanged?.Invoke(this, EventArgs.Empty);
+            StateChanged?.Invoke(this, EventArgs.Empty);
+
+            _log.Add(LogKind.Game, "Новая игра — состояние сброшено.");
+        }
+
         // -------------------------------------------------------------
         // Выбор трека
         // -------------------------------------------------------------

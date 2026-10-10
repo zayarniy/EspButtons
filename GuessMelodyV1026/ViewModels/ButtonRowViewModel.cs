@@ -5,6 +5,29 @@ namespace GuessMelody.ViewModels
 {
     public class ButtonRowViewModel : ViewModelBase
     {
+
+        private string _hbSecondsAgo = "—";
+        public string HbSecondsAgo
+        {
+            get => _hbSecondsAgo;
+            private set => Set(ref _hbSecondsAgo, value);
+        }
+
+        private DateTime _lastHbUtc;
+        /// <summary>Сколько секунд назад приходил heartbeat.</summary>
+        public void RefreshHbSecondsAgo()
+        {
+            // Если HB ни разу не было — показываем прочерк
+            if (_lastHbUtc == default(DateTime))
+            {
+                HbSecondsAgo = "—";
+                return;
+            }
+
+            var sec = (DateTime.UtcNow - _lastHbUtc).TotalSeconds;
+            HbSecondsAgo = sec < 0 ? "0.0" : sec.ToString("F1");
+        }
+
         public string Mac { get; }
 
         private string _name = "";
@@ -122,6 +145,7 @@ namespace GuessMelody.ViewModels
             FirstSeenLocal = info.FirstSeenUtc.ToLocalTime().ToString("HH:mm:ss");
             LastSeenLocal = info.LastSeenUtc.ToLocalTime().ToString("HH:mm:ss");
             _lastSeenUtc = info.LastSeenUtc;
+            _lastHbUtc = info.LastSeenUtc;   // последний HB = последний приход пакета от кнопки
             RefreshTime();
         }
 

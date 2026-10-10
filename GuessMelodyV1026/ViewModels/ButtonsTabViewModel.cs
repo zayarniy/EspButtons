@@ -107,6 +107,23 @@ namespace GuessMelody.ViewModels
             $"Живых {Rows.Count(r => r.Alive)}/{Rows.Count}";
 
         // -------- Логика --------
+
+
+        /// <summary>Применить привязки из внешнего конфига (например, при LoadGame).</summary>
+        public void ApplyExternalBindings(ButtonsConfig cfg)
+        {
+            if (cfg == null) return;
+            _buttons.ApplyBindings(cfg);
+
+            // Разложить имена по строкам таблицы
+            foreach (var row in Rows)
+            {
+                var b = cfg.Bindings.FirstOrDefault(x =>
+                    string.Equals(x.Mac, row.Mac, StringComparison.OrdinalIgnoreCase));
+                if (b != null) row.Name = b.TeamName;
+            }
+            _log.Add(LogKind.System, $"Внешние привязки применены ({cfg.Bindings.Count})");
+        }
         private void StartServer()
         {
             try
@@ -299,6 +316,7 @@ namespace GuessMelody.ViewModels
             _buttons.Reconnected -= OnButtonEvent;
             _buttons.Disconnected -= OnButtonEvent;
             _buttons.Press -= OnPress;
+
         }
     }
 }
