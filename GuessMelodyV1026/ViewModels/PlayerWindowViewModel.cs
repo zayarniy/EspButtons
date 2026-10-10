@@ -100,6 +100,7 @@ namespace GuessMelody.ViewModels
             _engine.FirstPressed += (s, team) => OnFirstPressed(team);
             _engine.CategoryHighlighted += (s, cat) => OnCategoryHighlighted(cat);
             _engine.RemainingChanged += (s, e) => OnRemainingChanged();
+            _engine.SettingsChanged += (s, e) => OnSettingsChanged();
 
             FlashCommand = new RelayCommand(p => Adjust(p as string, 1));
             UnflashCommand = new RelayCommand(p => Adjust(p as string, -1));
@@ -172,6 +173,20 @@ namespace GuessMelody.ViewModels
         }
 
         // ---------------------------------------------------------
+
+        private void OnSettingsChanged()
+        {
+            OnPropertyChanged(nameof(PlayerBgColor));
+            OnPropertyChanged(nameof(AccentColor));
+            OnPropertyChanged(nameof(TextColor));
+            OnPropertyChanged(nameof(BackgroundBrush));
+            OnPropertyChanged(nameof(AccentBrush));
+            OnPropertyChanged(nameof(TextBrush));
+            OnPropertyChanged(nameof(CategoryFontSize));
+            OnPropertyChanged(nameof(NameFontSize));
+            OnPropertyChanged(nameof(ScoreFontSize));
+            RebuildFromSettings();
+        }
         public void RebuildFromSettings()
         {
             Categories.Clear();

@@ -30,6 +30,7 @@ namespace GuessMelody.ViewModels
             AnswerServer = answerServer;
 
             Game.Buttons = Buttons;
+            Game.HookEngineEvents();
             Game.Settings = Settings;
             Game.Folders = Folders;
 

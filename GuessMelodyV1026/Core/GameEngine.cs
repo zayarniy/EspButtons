@@ -21,6 +21,7 @@ namespace GuessMelody.Core
         private readonly RoundTimer _countdownTimer;
         private readonly RoundTimer _answerTimer;
         private readonly Random _rng = new Random();
+        
 
         private readonly List<PressEvent> _pressQueue = new List<PressEvent>();
         private readonly HashSet<string> _blockedThisRound =
@@ -31,6 +32,7 @@ namespace GuessMelody.Core
         private readonly Dictionary<string, HashSet<string>> _playedByCategory =
             new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
+        public event EventHandler SettingsChanged;
         public GameSettings Settings { get; private set; } = new GameSettings();
         public RoundState State { get; private set; } = RoundState.Idle;
         public int CurrentRound { get; private set; }
@@ -89,8 +91,14 @@ namespace GuessMelody.Core
         {
             Settings = settings ?? new GameSettings();
             ResetPlayedCounters();
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
             _log.Add(LogKind.Game, "Настройки применены");
         }
+
+
+        /// <summary>Сообщить подписчикам, что настройки изменились (appearance и т.п.).</summary>
+        public void NotifySettingsChanged() => SettingsChanged?.Invoke(this, EventArgs.Empty);
+
 
         /// <summary>Сбросить счётчики при новой игре.</summary>
         public void ResetPlayedCounters()
@@ -359,6 +367,62 @@ namespace GuessMelody.Core
                 }
             }
         }
+
+
+        // -------------------------------------------------------------
+        // Управление командами на лету (эмуляция, отладка, привязка)
+        // -------------------------------------------------------------
+
+        /// <summary>Создать/обновить команду по номеру 1..6.</summary>
+        public Team EnsureTeam(int id, string name, string mac = null)
+        {
+            if (Settings.Buttons == null) Settings.Buttons = new ButtonsMap();
+            var list = Settings.Buttons.Teams;
+
+            var team = list.FirstOrDefault(t => t.Id == id);
+            if (team == null)
+            {
+                team = new Team
+                {
+                    Id = id,
+                    Name = string.IsNullOrWhiteSpace(name) ? $"Игрок {id}" : name,
+                    Mac = mac ?? $"VIRT:{id:00}",
+                    Score = 0
+                };
+                list.Add(team);
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(name)) team.Name = name;
+                if (!string.IsNullOrWhiteSpace(mac)) team.Mac = mac;
+            }
+
+            _log.Add(LogKind.Game, $"Команда #{id}: {team.Name} ({team.Mac})");
+            ScoreChanged?.Invoke(this, EventArgs.Empty);
+            return team;
+        }
+
+        /// <summary>Сбросить очки всем командам.</summary>
+        public void ResetScores()
+        {
+            foreach (var t in Teams) t.Score = 0;
+            ScoreChanged?.Invoke(this, EventArgs.Empty);
+            _log.Add(LogKind.Game, "Очки всех команд сброшены.");
+        }
+
+        /// <summary>Найти команду по номеру.</summary>
+        public Team GetTeamById(int id) => Teams.FirstOrDefault(t => t.Id == id);
+
+        /// <summary>
+        /// Эмуляция нажатия виртуальной кнопки игрока с номером 1..6.
+        /// Если команды нет — создаст с MAC VIRT:NN.
+        /// </summary>
+        public void EmulatePress(int teamId)
+        {
+            var team = GetTeamById(teamId) ?? EnsureTeam(teamId, $"Игрок {teamId}");
+            OnPlayerPress(team.Mac, DateTime.UtcNow, "virt", 0);
+        }
+
 
         public void AdjustScore(string mac, int delta)
         {

@@ -36,17 +36,34 @@ namespace GuessMelody.ViewModels
 
             StartCommand = new RelayCommand(_ => StartServer(), _ => !IsRunning);
             StopCommand = new RelayCommand(_ => StopServer(), _ => IsRunning);
+
             LoadGameCommand = new RelayCommand(_ => LoadGame());
-            SaveGameCommand = new RelayCommand(_ => SaveGame(false));
-            SaveGameAsCommand = new RelayCommand(_ => SaveGame(true));
+            SaveGameCommand = new RelayCommand(_ => SaveGame());
+            SaveGameAsCommand = new RelayCommand(_ => SaveGameAs());
 
             OpenPlayerCommand = new RelayCommand(_ => OpenPlayer?.Invoke(this, EventArgs.Empty));
             OpenHostCommand = new RelayCommand(_ => OpenHost?.Invoke(this, EventArgs.Empty));
 
-            TestPressCommand = new RelayCommand(p => TestPress(p as string));
-            TestRoundCommand = new RelayCommand(p => TestRound(p as string));
-            TestScoreYesCommand = new RelayCommand(_ => TestScore(true));
-            TestScoreNoCommand = new RelayCommand(_ => TestScore(false));
+            TestPressCommand = new RelayCommand(p =>
+            {
+                if (int.TryParse(p as string, out var id))
+                    _engine.EmulatePress(id);
+            });
+
+            TestRoundCommand = new RelayCommand(p =>
+            {
+                if (int.TryParse(p as string, out var n))
+                    _engine.StartRound(n - 1);   // 1..9 → индекс категории
+            });
+
+            TestScoreYesCommand = new RelayCommand(_ => _engine.SubmitScore(true));
+            TestScoreNoCommand = new RelayCommand(_ => _engine.SubmitScore(false));
+
+            ResetScoresCommand = new RelayCommand(_ => _engine.ResetScores());
+            FillDemoCommand = new RelayCommand(_ => FillDemo());
+            QuickDemoCommand = new RelayCommand(_ => QuickDemo());
+            NextRoundCommand = new RelayCommand(_ => _engine.NextRound());
+            PanicCommand = new RelayCommand(_ => _engine.Panic());
         }
 
         public ICommand StartCommand { get; }
@@ -60,11 +77,16 @@ namespace GuessMelody.ViewModels
         public ICommand TestRoundCommand { get; }
         public ICommand TestScoreYesCommand { get; }
         public ICommand TestScoreNoCommand { get; }
+        public ICommand ResetScoresCommand { get; }
+        public ICommand FillDemoCommand { get; }
+        public ICommand QuickDemoCommand { get; }
+        public ICommand NextRoundCommand { get; }
+        public ICommand PanicCommand { get; }
 
         public event EventHandler OpenPlayer;
         public event EventHandler OpenHost;
 
-        // Ссылки на VM, чтобы дергать их из GameTab
+        // Ссылки на соседние VM — присваиваются в MainViewModel
         public ButtonsTabViewModel Buttons { get; set; }
         public SettingsTabViewModel Settings { get; set; }
         public FoldersTabViewModel Folders { get; set; }
@@ -81,6 +103,48 @@ namespace GuessMelody.ViewModels
         private string _statusText = "Сервер не запущен";
         public string StatusText { get => _statusText; private set => Set(ref _statusText, value); }
 
+        // --- состояние движка, для биндинга в UI ---
+        public string RoundText =>
+            _engine.TotalRounds > 0
+                ? $"Раунд {_engine.CurrentRound + 1} / {_engine.TotalRounds}"
+                : $"Раунд {_engine.CurrentRound + 1}";
+
+        public string StateText
+        {
+            get
+            {
+                switch (_engine.State)
+                {
+                    case RoundState.Idle: return "Ожидание";
+                    case RoundState.Countdown: return $"Отсчёт {_engine.CountdownLeftSec:F0}";
+                    case RoundState.Playing: return "🎵 Играет";
+                    case RoundState.WaitingForAnswer:
+                        return _engine.FirstPressedTeam != null
+                                                        ? $"Первый: {_engine.FirstPressedTeam.Name}"
+                                                        : "Ждём ответа";
+                    case RoundState.Scored: return "Очко начислено";
+                    case RoundState.Finished: return "Завершено";
+                }
+                return "";
+            }
+        }
+
+        public string FirstPressedText => _engine.FirstPressedTeam?.Name ?? "—";
+
+        public void HookEngineEvents()
+        {
+            _engine.StateChanged += (s, e) =>
+            {
+                OnPropertyChanged(nameof(RoundText));
+                OnPropertyChanged(nameof(StateText));
+                OnPropertyChanged(nameof(FirstPressedText));
+            };
+            _engine.ScoreChanged += (s, e) => OnPropertyChanged(nameof(FirstPressedText));
+        }
+
+        // -------------------------------------------------------------
+        // Сервер
+        // -------------------------------------------------------------
         private void StartServer()
         {
             if (Buttons == null) { _dlg.Warn("Вкладка кнопок не подключена."); return; }
@@ -98,6 +162,9 @@ namespace GuessMelody.ViewModels
             StatusText = Buttons.StatusText;
         }
 
+        // -------------------------------------------------------------
+        // Load/Save игры
+        // -------------------------------------------------------------
         private void LoadGame()
         {
             var path = _dlg.OpenFile("GuessMelody game (*.gmgame)|*.gmgame|JSON (*.json)|*.json");
@@ -112,18 +179,28 @@ namespace GuessMelody.ViewModels
             Buttons?.RefreshFromHub();
 
             _audio.RootFolder = s.Folders?.RootFolder ?? "";
-
             _recent.Add(path);
             OnPropertyChanged(nameof(RecentFiles));
             _log.Add(LogKind.System, $"Игра загружена: {path}");
         }
 
-        private void SaveGame(bool asNew)
-        {
-            var path = asNew
-                ? _dlg.SaveFile("GuessMelody game (*.gmgame)|*.gmgame", "game.gmgame")
-                : _dlg.SaveFile("GuessMelody game (*.gmgame)|*.gmgame", "game.gmgame");
+        private void SaveGame() => SaveGameTo(null);
+        private void SaveGameAs() => SaveGameTo("game.gmgame");
 
+        private void SaveGameTo(string defaultName)
+        {
+            string path;
+            if (string.IsNullOrEmpty(defaultName))
+            {
+                path = _dlg.SaveFile("GuessMelody game (*.gmgame)|*.gmgame",
+                    string.IsNullOrEmpty(_engine.Settings.Name)
+                        ? "game.gmgame"
+                        : _engine.Settings.Name + ".gmgame");
+            }
+            else
+            {
+                path = _dlg.SaveFile("GuessMelody game (*.gmgame)|*.gmgame", defaultName);
+            }
             if (string.IsNullOrEmpty(path)) return;
 
             Settings?.ApplyToSettings(_engine.Settings);
@@ -141,26 +218,52 @@ namespace GuessMelody.ViewModels
             }
         }
 
-        private void TestPress(string teamId)
+        // -------------------------------------------------------------
+        // Быстрые сценарии
+        // -------------------------------------------------------------
+
+        /// <summary>Заполнить игроков 1..6 и категории-заглушки, если пусто.</summary>
+        private void FillDemo()
         {
-            if (!int.TryParse(teamId, out var n)) return;
-            var team = _engine.Teams.FirstOrDefault(t => t.Id == n);
-            if (team == null) return;
-            _engine.OnPlayerPress(team.Mac, DateTime.UtcNow, "test", 0);
-            _log.Add(LogKind.Game, $"[TEST] Нажатие команды {teamId}");
+            var s = _engine.Settings;
+
+            // Игроки 1..3, если никого нет
+            if (s.Buttons?.Teams == null || s.Buttons.Teams.Count == 0)
+            {
+                if (s.Buttons == null) s.Buttons = new ButtonsMap();
+                for (int i = 1; i <= 3; i++)
+                    _engine.EnsureTeam(i, $"Игрок {i}");
+            }
+
+            // Категории-заглушки, если папок нет
+            if (s.Folders?.Categories == null || s.Folders.Categories.Count == 0)
+            {
+                if (s.Folders == null) s.Folders = new FoldersCatalog();
+                for (int i = 1; i <= 3; i++)
+                {
+                    var cat = new Category { Name = $"Категория {i}" };
+                    for (int j = 1; j <= 3; j++)
+                        cat.Tracks.Add(new Track { RelativePath = $"demo/cat{i}/track{j}.mp3" });
+                    s.Folders.Categories.Add(cat);
+                }
+                _log.Add(LogKind.System, "Заполнены демо-категории (без реальных файлов).");
+            }
+
+            _dlg.Info("Заполнено: 3 игрока (VIRT), 3 категории по 3 трека.\n" +
+                      "Файлы не существуют — при старте раунда музыка не заиграет, " +
+                      "но весь цикл раунда будет работать.");
+
+            // Обновить оба окна
+            OpenPlayer?.Invoke(this, EventArgs.Empty);
+            OpenHost?.Invoke(this, EventArgs.Empty);
         }
 
-        private void TestRound(string roundNo)
+        /// <summary>Заполнить демо-данные и сразу стартовать 1-й раунд.</summary>
+        private void QuickDemo()
         {
-            if (!int.TryParse(roundNo, out var n)) return;
-            _engine.StartRound(n - 1);
-            _log.Add(LogKind.Game, $"[TEST] Раунд {roundNo}");
-        }
-
-        private void TestScore(bool yes)
-        {
-            _engine.SubmitScore(yes);
-            _log.Add(LogKind.Game, $"[TEST] Очки: {(yes ? "Да" : "Нет")}");
+            FillDemo();
+            // Стартуем 1-ю категорию
+            _engine.StartRound(0);
         }
     }
 }

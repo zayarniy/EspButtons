@@ -39,6 +39,10 @@ namespace GuessMelody
             services.AddTransient<PlayerWindowViewModel>();
             services.AddTransient<HostWindowViewModel>();
             services.AddSingleton<FolderScanner>();
+            services.AddSingleton<ColorPickerService>();
+            services.AddSingleton<SettingsPresetService>();
+
+
             return services.BuildServiceProvider();
         }
     }

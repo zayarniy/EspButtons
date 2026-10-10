@@ -6,7 +6,14 @@ using System.Threading.Tasks;
 
 namespace GuessMelody.Core.Models
 {
-
+    public class SettingsPreset
+    {
+        public string Name { get; set; } = "default";
+        public GameRules Rules { get; set; } = new GameRules();
+        public AudioSettings Audio { get; set; } = new AudioSettings();
+        public TimingSettings Timings { get; set; } = new TimingSettings();
+        public AppearanceSettings Appearance { get; set; } = new AppearanceSettings();
+    }
     public class GameRules
     {
         public int PlayerCount { get; set; } = 3;
