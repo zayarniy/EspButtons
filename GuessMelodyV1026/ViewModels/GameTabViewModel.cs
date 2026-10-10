@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Input;
 using GuessMelody.Core;
 using GuessMelody.Core.Enums;
@@ -15,16 +16,23 @@ namespace GuessMelody.ViewModels
         private readonly GameEngine _engine;
         private readonly DialogService _dlg;
         private readonly RecentFilesService _recent;
+        private readonly AudioCoordinator _audio;
 
         public ObservableCollection<string> RecentFiles =>
             new ObservableCollection<string>(_recent.Files);
 
-        public GameTabViewModel(LogService log, GameEngine engine, DialogService dlg, RecentFilesService recent)
+        public GameTabViewModel(
+            LogService log,
+            GameEngine engine,
+            DialogService dlg,
+            RecentFilesService recent,
+            AudioCoordinator audio)
         {
             _log = log;
             _engine = engine;
             _dlg = dlg;
             _recent = recent;
+            _audio = audio;
 
             StartCommand = new RelayCommand(_ => StartServer(), _ => !IsRunning);
             StopCommand = new RelayCommand(_ => StopServer(), _ => IsRunning);
@@ -103,6 +111,8 @@ namespace GuessMelody.ViewModels
             Folders?.ApplyFromSettings(s);
             Buttons?.RefreshFromHub();
 
+            _audio.RootFolder = s.Folders?.RootFolder ?? "";
+
             _recent.Add(path);
             OnPropertyChanged(nameof(RecentFiles));
             _log.Add(LogKind.System, $"Игра загружена: {path}");
@@ -133,16 +143,23 @@ namespace GuessMelody.ViewModels
 
         private void TestPress(string teamId)
         {
+            if (!int.TryParse(teamId, out var n)) return;
+            var team = _engine.Teams.FirstOrDefault(t => t.Id == n);
+            if (team == null) return;
+            _engine.OnPlayerPress(team.Mac, DateTime.UtcNow, "test", 0);
             _log.Add(LogKind.Game, $"[TEST] Нажатие команды {teamId}");
         }
 
         private void TestRound(string roundNo)
         {
+            if (!int.TryParse(roundNo, out var n)) return;
+            _engine.StartRound(n - 1);
             _log.Add(LogKind.Game, $"[TEST] Раунд {roundNo}");
         }
 
         private void TestScore(bool yes)
         {
+            _engine.SubmitScore(yes);
             _log.Add(LogKind.Game, $"[TEST] Очки: {(yes ? "Да" : "Нет")}");
         }
     }

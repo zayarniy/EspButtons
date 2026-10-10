@@ -98,4 +98,15 @@ namespace GuessMelody.Converters
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
             throw new NotSupportedException();
     }
+
+    public class TrackProgressConverter : IValueConverter
+    {
+        public static readonly TrackProgressConverter Instance = new TrackProgressConverter();
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+            value is double d ? d : 0;
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
 }

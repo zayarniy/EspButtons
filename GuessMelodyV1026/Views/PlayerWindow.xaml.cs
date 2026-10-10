@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GuessMelody.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,29 @@ namespace GuessMelody.Views
         public PlayerWindow()
         {
             InitializeComponent();
+            DataContextChanged += (s, e) =>
+            {
+                if (DataContext is PlayerWindowViewModel vm)
+                    vm.RebuildFromSettings();
+            };
+        }
+
+        private void TeamTile_LeftClick(object sender, MouseButtonEventArgs e)
+        {
+            if (!(sender is FrameworkElement fe)) return;
+            var name = fe.Tag as string;
+            if (string.IsNullOrEmpty(name)) return;
+            var vm = DataContext as PlayerWindowViewModel;
+            vm?.FlashCommand.Execute(name);
+        }
+
+        private void TeamTile_RightClick(object sender, MouseButtonEventArgs e)
+        {
+            if (!(sender is FrameworkElement fe)) return;
+            var name = fe.Tag as string;
+            if (string.IsNullOrEmpty(name)) return;
+            var vm = DataContext as PlayerWindowViewModel;
+            vm?.UnflashCommand.Execute(name);
         }
     }
 }

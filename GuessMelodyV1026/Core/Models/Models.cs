@@ -44,8 +44,15 @@ namespace GuessMelody.Core.Models
     {
         public string RelativePath { get; set; } = "";
         public double DurationSec { get; set; }
+        public long FileSizeBytes { get; set; }
         public bool IsUnsupported { get; set; }
-        public TrackOverrides Overrides { get; set; }
+        public TrackOverrides Overrides { get; set; }   // null = использовать defaults
+
+        public bool HasOverrides =>
+            Overrides != null &&
+            (Overrides.StartSec != null || Overrides.DurationSec != null ||
+             Overrides.Volume != null || Overrides.Loop != null ||
+             Overrides.RandomStart != null);
     }
 
     public class TrackOverrides

@@ -105,16 +105,23 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Converters\Converters.cs" />
+    <Compile Include="Core\RoundTimer.cs" />
+    <Compile Include="Services\AudioCoordinator.cs" />
+    <Compile Include="Services\FolderScanner.cs" />
+    <Compile Include="ViewModels\PlayerWindowViewModel.cs" />
     <Compile Include="Services\RecentFilesService.cs" />
     <Compile Include="Services\RelayCommand.cs" />
     <Compile Include="ViewModels\AnswerServerTabViewModel.cs" />
     <Compile Include="ViewModels\ButtonRowViewModel.cs" />
     <Compile Include="ViewModels\ButtonsTabViewModel.cs" />
+    <Compile Include="ViewModels\CategoryRowViewModel.cs" />
     <Compile Include="ViewModels\FoldersTabViewModel.cs" />
     <Compile Include="ViewModels\GameTabViewModel.cs" />
+    <Compile Include="ViewModels\HostWindowViewModel.cs" />
     <Compile Include="ViewModels\LogTabViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\SettingsTabViewModel.cs" />
+    <Compile Include="ViewModels\TrackRowViewModel.cs" />
     <Compile Include="ViewModels\ViewModelBase.cs" />
     <Compile Include="Views\HostWindow.xaml.cs">
       <DependentUpon>HostWindow.xaml</DependentUpon>

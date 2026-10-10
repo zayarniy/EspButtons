@@ -14,24 +14,20 @@ namespace GuessMelody
         {
             var services = new ServiceCollection();
 
-            // -------- Core --------
             services.AddSingleton<LogService>();
             services.AddSingleton<GameEngine>();
 
-            // -------- Services --------
             services.AddSingleton<DialogService>();
             services.AddSingleton<RecentFilesService>();
+            services.AddSingleton<AudioCoordinator>();
 
-            // -------- Buttons --------
             services.AddSingleton<ButtonService>(sp =>
                 new ButtonService(sp.GetRequiredService<LogService>()));
 
-            // -------- Audio --------
             services.AddSingleton<AudioEngine>();
             services.AddSingleton<PreviewEngine>();
             services.AddSingleton<BuzzerPlayer>();
 
-            // -------- ViewModels --------
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<GameTabViewModel>();
             services.AddSingleton<SettingsTabViewModel>();
@@ -40,6 +36,9 @@ namespace GuessMelody
             services.AddSingleton<LogTabViewModel>();
             services.AddSingleton<AnswerServerTabViewModel>();
 
+            services.AddTransient<PlayerWindowViewModel>();
+            services.AddTransient<HostWindowViewModel>();
+            services.AddSingleton<FolderScanner>();
             return services.BuildServiceProvider();
         }
     }
