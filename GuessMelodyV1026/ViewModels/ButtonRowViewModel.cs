@@ -14,19 +14,7 @@ namespace GuessMelody.ViewModels
         }
 
         private DateTime _lastHbUtc;
-        /// <summary>Сколько секунд назад приходил heartbeat.</summary>
-        public void RefreshHbSecondsAgo()
-        {
-            // Если HB ни разу не было — показываем прочерк
-            if (_lastHbUtc == default(DateTime))
-            {
-                HbSecondsAgo = "—";
-                return;
-            }
 
-            var sec = (DateTime.UtcNow - _lastHbUtc).TotalSeconds;
-            HbSecondsAgo = sec < 0 ? "0.0" : sec.ToString("F1");
-        }
 
         public string Mac { get; }
 
@@ -147,9 +135,25 @@ namespace GuessMelody.ViewModels
             _lastSeenUtc = info.LastSeenUtc;
             _lastHbUtc = info.LastSeenUtc;   // последний HB = последний приход пакета от кнопки
             RefreshTime();
+            RefreshHbSecondsAgo();
         }
 
         public void RefreshTime() =>
             SecondsSinceLastSeen = (DateTime.UtcNow - _lastSeenUtc).TotalSeconds.ToString("F1");
+
+        /// <summary>Сколько секунд назад приходил heartbeat.</summary>
+        public void RefreshHbSecondsAgo()
+        {
+            // Если HB ни разу не было — показываем прочерк
+            if (_lastHbUtc == default(DateTime))
+            {
+                HbSecondsAgo = "—";
+                return;
+            }
+
+            var sec = (DateTime.UtcNow - _lastHbUtc).TotalSeconds;
+            HbSecondsAgo = sec < 0 ? "0.0" : sec.ToString("F1");
+        }
+
     }
 }
