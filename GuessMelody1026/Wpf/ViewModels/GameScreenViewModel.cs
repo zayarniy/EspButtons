@@ -1,5 +1,6 @@
 ﻿using GuessMelody.Core.Game;
 using GuessMelody.Core.Models;
+using GuessMelody.Wpf.Game;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -199,6 +200,8 @@ namespace GuessMelody.Wpf.ViewModels
             _engine.PressAccepted += (_, p) => OnPressAccepted(p);
             _engine.RoundFinished += (_, r) => OnRoundFinished(r);
             _engine.Message += (_, m) => { /* можно показывать в SubText */ };
+            // Подписка на изменение счёта
+            GameController.Instance.ScoreChanged += OnScoreChanged;
 
             _answerTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1000) };
             _answerTimer.Tick += (_, __) =>
@@ -211,6 +214,38 @@ namespace GuessMelody.Wpf.ViewModels
                 }
             };
             _answerTimer.Start();
+        }
+
+        private void OnScoreChanged(object sender, string mac)
+        {
+            // На случай, если событие пришло из фонового потока
+            if (!System.Windows.Application.Current.Dispatcher.CheckAccess())
+            {
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(
+                    new Action(() => OnScoreChanged(sender, mac)));
+                return;
+            }
+
+            if (mac == "*")
+            {
+                // Сброс всех — пересобрать табло
+                RefreshAllScores();
+                return;
+            }
+
+            var row = Scores.FirstOrDefault(s =>
+                string.Equals(s.Mac, mac, StringComparison.OrdinalIgnoreCase));
+            if (row != null)
+                row.Score = GameController.Instance.GetScore(mac);
+            else
+                RefreshAllScores();
+        }
+
+        private void RefreshAllScores()
+        {
+            // У GameController есть снимок очков — берём его
+            foreach (var row in Scores)
+                row.Score = GameController.Instance.GetScore(row.Mac);
         }
 
         // =============================================================
